@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/wayscloudas/terraform-provider-wayscloud/internal/client"
+	"github.com/wayscloud/terraform-provider-wayscloud/internal/client"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -487,9 +487,9 @@ func (r *DNSRecordResource) mapResponseToState(data *DNSRecordResourceModel, rec
 	data.ID = types.StringValue(record.RecordID)
 	data.ZoneID = types.StringValue(record.ZoneID)
 	data.ZoneName = types.StringValue(zoneName)
-	data.Name = types.StringValue(record.Host)
-	data.Type = types.StringValue(record.RecordType)
-	data.Value = types.StringValue(record.Record)
+	data.Name = types.StringValue(normalizeHostname(record.Host))
+	data.Type = types.StringValue(normalizeRecordType(record.RecordType))
+	data.Value = types.StringValue(normalizeRecordValue(record.Record, record.RecordType))
 	data.TTL = types.Int64Value(record.TTL)
 	data.Status = types.StringValue(record.Status)
 	data.CreatedAt = types.StringValue(record.CreatedAt)
@@ -510,4 +510,34 @@ func (r *DNSRecordResource) mapResponseToState(data *DNSRecordResourceModel, rec
 	} else {
 		data.Port = types.Int64Null()
 	}
+}
+
+// normalizeRecordType ensures consistent uppercase for record types
+func normalizeRecordType(recordType string) string {
+	return strings.ToUpper(recordType)
+}
+
+// normalizeHostname removes trailing dots from hostnames
+func normalizeHostname(host string) string {
+	return strings.TrimSuffix(host, ".")
+}
+
+// normalizeRecordValue normalizes record values based on type
+func normalizeRecordValue(value string, recordType string) string {
+	normalized := value
+
+	// Remove trailing dots from CNAME, MX, NS, SRV targets
+	upperType := strings.ToUpper(recordType)
+	if upperType == "CNAME" || upperType == "MX" || upperType == "NS" || upperType == "SRV" || upperType == "PTR" {
+		normalized = strings.TrimSuffix(normalized, ".")
+	}
+
+	// Remove surrounding quotes from TXT records (API often returns "value")
+	if upperType == "TXT" || upperType == "SPF" {
+		if len(normalized) >= 2 && normalized[0] == '"' && normalized[len(normalized)-1] == '"' {
+			normalized = normalized[1 : len(normalized)-1]
+		}
+	}
+
+	return normalized
 }

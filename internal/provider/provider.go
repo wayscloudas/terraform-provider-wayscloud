@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/wayscloudas/terraform-provider-wayscloud/internal/client"
+	"github.com/wayscloud/terraform-provider-wayscloud/internal/client"
 )
 
 // Ensure WAYSCloudProvider satisfies various provider interfaces.
@@ -168,6 +168,11 @@ func (p *WAYSCloudProvider) Resources(ctx context.Context) []func() resource.Res
 	return []func() resource.Resource{
 		NewDNSZoneResource,
 		NewDNSRecordResource,
+		NewRedisInstanceResource,
+		NewS3BucketResource,
+		NewDatabaseResource,
+		NewVPSResource,
+		NewAppResource,
 	}
 }
 

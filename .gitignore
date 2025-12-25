@@ -27,3 +27,4 @@ Thumbs.db
 
 # Debug
 debug.log
+terraform-provider-wayscloud

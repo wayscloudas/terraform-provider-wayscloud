@@ -13,7 +13,7 @@ The official Terraform provider for [WAYSCloud](https://wayscloud.services) – 
 WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open standards**, and **no vendor lock-in**. All infrastructure runs on European soil with full GDPR compliance.
 
 - **Website:** https://wayscloud.services
-- **Documentation:** https://docs.wayscloud.net
+- **Documentation:** https://docs.wayscloud.services
 - **Security contact:** security@wayscloud.no
 
 ## Example Usage

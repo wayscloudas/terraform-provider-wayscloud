@@ -27,7 +27,7 @@ provider "wayscloud" {}
 ### From Source
 
 ```bash
-git clone https://github.com/wayscloud/terraform-provider-wayscloud.git
+git clone https://github.com/wayscloudas/terraform-provider-wayscloud.git
 cd terraform-provider-wayscloud
 go build -o terraform-provider-wayscloud
 ```
@@ -246,5 +246,5 @@ See [SECURITY.md](SECURITY.md) for:
 ## Support
 
 - [WAYSCloud Documentation](https://docs.wayscloud.net)
-- [GitHub Issues](https://github.com/wayscloud/terraform-provider-wayscloud/issues)
+- [GitHub Issues](https://github.com/wayscloudas/terraform-provider-wayscloud/issues)
 - [WAYSCloud Support](https://wayscloud.services/support)

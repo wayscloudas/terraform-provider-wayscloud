@@ -9,7 +9,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/wayscloud/terraform-provider-wayscloud/internal/provider"
+	"github.com/wayscloudas/terraform-provider-wayscloud/internal/provider"
 )
 
 // Run "go generate" to format example terraform files and generate the docs for the registry/website

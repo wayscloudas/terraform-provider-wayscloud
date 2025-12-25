@@ -1,4 +1,4 @@
-module github.com/wayscloud/terraform-provider-wayscloud
+module github.com/wayscloudas/terraform-provider-wayscloud
 
 go 1.21
 

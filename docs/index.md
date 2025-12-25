@@ -14,7 +14,7 @@ WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open sta
 
 - **Website:** https://wayscloud.services
 - **Documentation:** https://docs.wayscloud.services
-- **Security contact:** security@wayscloud.no
+- **Security contact:** security@wayscloud.net
 
 ## Example Usage
 

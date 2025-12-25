@@ -1,22 +1,41 @@
-# Terraform Provider for WAYSCloud
+# WAYSCloud Terraform Provider
 
-The WAYSCloud provider allows you to manage [WAYSCloud](https://wayscloud.services) infrastructure using Terraform.
+The official Terraform provider for [WAYSCloud](https://wayscloud.services) – a Nordic cloud platform providing IaaS, PaaS, and managed services on European infrastructure.
+
+## About WAYSCloud
+
+WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open standards**, and **no vendor lock-in**. All infrastructure runs on European soil with full GDPR compliance.
+
+- **Website:** https://wayscloud.services
+- **Documentation:** https://docs.wayscloud.net
+- **Security contact:** security@wayscloud.no
+
+## Features
+
+| Service | Resource | Description |
+|---------|----------|-------------|
+| **DNS** | `wayscloud_dns_zone` | Authoritative DNS hosting |
+| **DNS** | `wayscloud_dns_record` | A, AAAA, CNAME, MX, TXT, SRV records |
+| **Compute** | `wayscloud_vps` | Virtual Private Servers |
+| **Storage** | `wayscloud_s3_bucket` | S3-compatible object storage |
+| **Database** | `wayscloud_database` | Managed PostgreSQL & MariaDB |
+| **Cache** | `wayscloud_redis_instance` | Managed Redis |
+| **Apps** | `wayscloud_app` | Container platform with scale-to-zero |
 
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.21 (for building from source)
+- WAYSCloud account with API key
 
 ## Installation
-
-### From Terraform Registry (Recommended)
 
 ```hcl
 terraform {
   required_providers {
     wayscloud = {
-      source  = "wayscloud/wayscloud"
-      version = "~> 0.1.0"
+      source  = "wayscloudas/wayscloud"
+      version = "~> 0.1"
     }
   }
 }
@@ -24,96 +43,48 @@ terraform {
 provider "wayscloud" {}
 ```
 
-### From Source
-
-```bash
-git clone https://github.com/wayscloudas/terraform-provider-wayscloud.git
-cd terraform-provider-wayscloud
-go build -o terraform-provider-wayscloud
-```
-
 ## Authentication
 
-The provider supports two authentication methods:
-
-### API Key (Recommended for most resources)
-
-API keys authenticate with the `X-API-Key` header and work with most resources.
+### API Key (Recommended)
 
 ```bash
-# Environment variable (recommended)
 export WAYSCLOUD_API_KEY="wayscloud_api_xxx..."
 ```
 
+Or in provider configuration:
+
 ```hcl
-# Or in provider configuration
 provider "wayscloud" {
-  api_key = var.wayscloud_api_key  # Use a variable, never hardcode!
+  api_key = var.wayscloud_api_key  # Never hardcode!
 }
 ```
 
 ### Personal Access Token (PAT)
 
-PAT tokens are required for the `wayscloud_database` resource. The provider auto-detects the token type based on the prefix.
+Required for `wayscloud_database`. The provider auto-detects token type.
 
 ```bash
-export WAYSCLOUD_API_KEY="wayscloud_pat_xxx..."  # PAT for database resource
+export WAYSCLOUD_API_KEY="wayscloud_pat_xxx..."
 ```
 
-| Resource | Auth Type | Required Scopes |
-|----------|-----------|-----------------|
+| Resource | Auth Type | Scopes |
+|----------|-----------|--------|
 | `wayscloud_dns_zone` | API Key | `dns` |
 | `wayscloud_dns_record` | API Key | `dns` |
 | `wayscloud_redis_instance` | API Key | `redis` |
 | `wayscloud_s3_bucket` | API Key | `storage` |
-| `wayscloud_database` | **PAT** | `database:read`, `database:write` |
 | `wayscloud_vps` | API Key | `vps` |
 | `wayscloud_app` | API Key | `apps` |
-
-### Base URL Override (Staging/Testing)
-
-```bash
-export WAYSCLOUD_ENDPOINT="https://api-staging.wayscloud.services"
-```
-
-```hcl
-provider "wayscloud" {
-  endpoint = "https://api-staging.wayscloud.services"
-}
-```
-
-## Resources
-
-| Resource | Description | Status |
-|----------|-------------|--------|
-| `wayscloud_dns_zone` | Manages DNS zones | Stable |
-| `wayscloud_dns_record` | Manages DNS records (A, AAAA, CNAME, MX, TXT, etc.) | Stable |
-| `wayscloud_redis_instance` | Redis as a Service | Stable |
-| `wayscloud_s3_bucket` | S3-compatible object storage | Stable |
-| `wayscloud_database` | Managed PostgreSQL/MariaDB | Stable |
-| `wayscloud_vps` | Virtual Private Servers | Stable |
-| `wayscloud_app` | Container app platform | Stable |
+| `wayscloud_database` | **PAT** | `database:read`, `database:write` |
 
 ## Quick Start
 
 ```hcl
-terraform {
-  required_providers {
-    wayscloud = {
-      source  = "wayscloud/wayscloud"
-      version = "~> 0.1.0"
-    }
-  }
-}
-
-provider "wayscloud" {}
-
-# Create a DNS zone
+# Create a DNS zone and record
 resource "wayscloud_dns_zone" "example" {
   name = "example.com"
 }
 
-# Create an A record
 resource "wayscloud_dns_record" "www" {
   zone_name = wayscloud_dns_zone.example.name
   name      = "www"
@@ -124,67 +95,51 @@ resource "wayscloud_dns_record" "www" {
 
 # Create a Redis cache
 resource "wayscloud_redis_instance" "cache" {
-  name   = "my-app-cache"
+  name   = "my-cache"
   region = "no"
   plan   = "redis-starter"
 }
 ```
 
-## Import Examples
-
-All resources support importing existing infrastructure:
+## Import Existing Resources
 
 ```bash
-# DNS Zone (by domain name)
+# DNS Zone
 terraform import wayscloud_dns_zone.example example.com
 
-# DNS Record (by zone/record_id)
-terraform import wayscloud_dns_record.www example.com/550e8400-e29b-41d4-a716-446655440000
+# DNS Record
+terraform import wayscloud_dns_record.www example.com/RECORD_UUID
 
-# Redis Instance (by UUID)
-terraform import wayscloud_redis_instance.cache 550e8400-e29b-41d4-a716-446655440000
+# Redis Instance
+terraform import wayscloud_redis_instance.cache INSTANCE_UUID
 
-# S3 Bucket (by bucket name)
-terraform import wayscloud_s3_bucket.uploads my-bucket-name
+# S3 Bucket
+terraform import wayscloud_s3_bucket.uploads bucket-name
 
-# Database (by type/name)
-terraform import wayscloud_database.app postgresql/myapp-prod
+# Database
+terraform import wayscloud_database.app postgresql/db-name
 
-# VPS (by UUID)
-terraform import wayscloud_vps.web 550e8400-e29b-41d4-a716-446655440000
+# VPS
+terraform import wayscloud_vps.web VPS_UUID
 
-# App (by app ID)
-terraform import wayscloud_app.api app_01ARZ3NDEKTSV4RRFFQ69G5FAV
+# App
+terraform import wayscloud_app.api app_ULID
 ```
 
 ## Known Limitations
-
-### ForceNew Attributes
-
-The following attributes require resource replacement (destroy + create):
-
-| Resource | ForceNew Attributes |
-|----------|---------------------|
-| `wayscloud_dns_zone` | `name` |
-| `wayscloud_dns_record` | `zone_name`, `name`, `type` |
-| `wayscloud_redis_instance` | `name`, `region`, `plan` |
-| `wayscloud_s3_bucket` | `bucket_name`, `tier` |
-| `wayscloud_database` | `name`, `type`, `tier` |
-| `wayscloud_vps` | `hostname`, `plan_code`, `region`, `os_template`, `ssh_keys` |
-| `wayscloud_app` | `slug`, `region` |
 
 ### Async Resources
 
 Some resources have async provisioning. The provider polls until ready:
 
-| Resource | Typical Wait Time | Polling Interval |
-|----------|-------------------|------------------|
-| `wayscloud_redis_instance` | 2-5 minutes | 10 seconds |
-| `wayscloud_vps` | 3-10 minutes | 15 seconds |
+| Resource | Typical Wait Time |
+|----------|-------------------|
+| `wayscloud_redis_instance` | 2-5 minutes |
+| `wayscloud_vps` | 3-10 minutes |
 
 ### Sensitive Attributes
 
-These attributes are only available on initial creation and cannot be retrieved after import:
+These attributes are only available on initial creation:
 
 - `wayscloud_database.password`, `wayscloud_database.connection_string`
 - `wayscloud_redis_instance.password`
@@ -199,45 +154,31 @@ The provider automatically:
 
 ## Development
 
-### Building
-
 ```bash
+# Build
 go build -o terraform-provider-wayscloud
-```
 
-### Testing
-
-```bash
-# Unit tests
+# Test
 go test ./... -race
 
-# Stress test
-go test ./... -count=50
-
-# Acceptance tests (requires credentials)
+# Acceptance tests
 export WAYSCLOUD_API_KEY="wayscloud_api_xxx..."
 export TF_ACC=1
 go test ./... -v -timeout 60m
 ```
 
-### Parallel Apply Testing
+## Versioning
 
-```bash
-# Test with high parallelism
-terraform apply -parallelism=20 -auto-approve
-terraform refresh
-terraform plan  # Should show no changes
-terraform destroy -parallelism=20 -auto-approve
-```
+This provider follows [Semantic Versioning](https://semver.org/):
+- **MAJOR**: Breaking changes to resource schemas
+- **MINOR**: New resources or attributes
+- **PATCH**: Bug fixes and documentation
 
 ## Security
 
-See [SECURITY.md](SECURITY.md) for:
-- How to report vulnerabilities
-- Best practices for CI/CD
-- Token handling guidelines
+See [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
-**Never commit API keys or PAT tokens to version control.**
+**Never commit API keys or tokens to version control.**
 
 ## License
 
@@ -245,6 +186,6 @@ See [SECURITY.md](SECURITY.md) for:
 
 ## Support
 
-- [WAYSCloud Documentation](https://docs.wayscloud.net)
+- [Terraform Registry Docs](https://registry.terraform.io/providers/wayscloudas/wayscloud/latest/docs)
 - [GitHub Issues](https://github.com/wayscloudas/terraform-provider-wayscloud/issues)
 - [WAYSCloud Support](https://wayscloud.services/support)

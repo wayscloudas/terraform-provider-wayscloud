@@ -1,12 +1,20 @@
 ---
 page_title: "WAYSCloud Provider"
 description: |-
-  The WAYSCloud provider allows you to manage WAYSCloud infrastructure resources.
+  The official Terraform provider for WAYSCloud – a Nordic cloud platform providing IaaS, PaaS, and managed services on European infrastructure.
 ---
 
 # WAYSCloud Provider
 
-The WAYSCloud provider allows you to manage [WAYSCloud](https://wayscloud.services) infrastructure using Terraform.
+The official Terraform provider for [WAYSCloud](https://wayscloud.services) – a Nordic cloud platform providing IaaS, PaaS, and managed services on European infrastructure.
+
+## About WAYSCloud
+
+WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open standards**, and **no vendor lock-in**. All infrastructure runs on European soil with full GDPR compliance.
+
+- **Website:** https://wayscloud.services
+- **Documentation:** https://docs.wayscloud.net
+- **Security contact:** security@wayscloud.no
 
 ## Example Usage
 

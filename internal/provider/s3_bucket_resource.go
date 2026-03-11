@@ -299,16 +299,18 @@ func (r *S3BucketResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	// Preserve secrets from state (not returned on read)
+	// Preserve values from state (not returned on read)
 	accessKey := data.AccessKey
 	secretKey := data.SecretKey
+	endpoint := data.Endpoint
 
 	// Map response to state
 	data.BucketName = types.StringValue(bucket.BucketName)
 	data.Tier = types.StringValue(bucket.StorageTier)
 	data.Region = types.StringValue(bucket.Region)
 	data.IsActive = types.BoolValue(bucket.IsActive)
-	data.Endpoint = types.StringValue("https://storage.wayscloud.services")
+	// Preserve endpoint from state (not returned by API on read)
+	data.Endpoint = endpoint
 
 	if bucket.TotalStorageGB != nil {
 		data.TotalStorageGB = types.Float64Value(*bucket.TotalStorageGB)
@@ -376,4 +378,6 @@ func (r *S3BucketResource) Delete(ctx context.Context, req resource.DeleteReques
 func (r *S3BucketResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Import by bucket name
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("bucket_name"), req.ID)...)
+	// Set default endpoint for imported buckets (will be preserved on subsequent reads)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("endpoint"), "https://storage.wayscloud.services")...)
 }

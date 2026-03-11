@@ -313,28 +313,47 @@ func (r *DNSRecordResource) Read(ctx context.Context, req resource.ReadRequest, 
 		"record_id": recordID,
 	})
 
-	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/dns/zones/%s/records/%s", zoneName, recordID))
+	// API does not have a single-record GET endpoint, so list all and filter
+	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/dns/zones/%s/records", zoneName))
 	if err != nil {
-		// Check if record was deleted
 		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
-			tflog.Debug(ctx, "DNS record not found, removing from state", map[string]interface{}{
+			tflog.Debug(ctx, "DNS zone not found, removing record from state", map[string]interface{}{
 				"record_id": recordID,
 			})
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read DNS record: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read DNS records: %s", err))
 		return
 	}
 
-	var record dnsRecordResponse
-	if err := json.Unmarshal(respBody, &record); err != nil {
+	var listResp struct {
+		Records []dnsRecordResponse `json:"records"`
+	}
+	if err := json.Unmarshal(respBody, &listResp); err != nil {
 		resp.Diagnostics.AddError("Parse Error", fmt.Sprintf("Unable to parse API response: %s", err))
 		return
 	}
 
+	// Find our record by ID
+	var found *dnsRecordResponse
+	for _, r := range listResp.Records {
+		if r.RecordID == recordID {
+			found = &r
+			break
+		}
+	}
+
+	if found == nil {
+		tflog.Debug(ctx, "DNS record not found, removing from state", map[string]interface{}{
+			"record_id": recordID,
+		})
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	// Map response to state
-	r.mapResponseToState(&data, &record, zoneName)
+	r.mapResponseToState(&data, found, zoneName)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -409,7 +428,7 @@ func (r *DNSRecordResource) Update(ctx context.Context, req resource.UpdateReque
 		"record_id": recordID,
 	})
 
-	respBody, err := r.client.Patch(ctx, fmt.Sprintf("/v1/dns/zones/%s/records/%s", zoneName, recordID), updateReq)
+	respBody, err := r.client.Put(ctx, fmt.Sprintf("/v1/dns/zones/%s/records/%s", zoneName, recordID), updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update DNS record: %s", err))
 		return

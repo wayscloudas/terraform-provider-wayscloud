@@ -21,6 +21,10 @@ WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open sta
 | **Database** | `wayscloud_database` | Managed PostgreSQL & MariaDB |
 | **Cache** | `wayscloud_redis_instance` | Managed Redis |
 | **Apps** | `wayscloud_app` | Container platform with scale-to-zero |
+| **IoT** | `wayscloud_iot_device` | IoT device management with MQTT |
+| **SMS** | `wayscloud_sms_sender_profile` | SMS sender profiles |
+| **SMS** | `wayscloud_sms_keyword` | SMS inbound keyword handling |
+| **Domains** | `wayscloud_domain_verification` | Domain ownership verification |
 
 ## Requirements
 
@@ -61,7 +65,7 @@ provider "wayscloud" {
 
 ### Personal Access Token (PAT)
 
-Required for `wayscloud_database`. The provider auto-detects token type.
+Required for `wayscloud_database` and `wayscloud_domain_verification`. The provider auto-detects token type.
 
 ```bash
 export WAYSCLOUD_API_KEY="wayscloud_pat_xxx..."
@@ -76,6 +80,10 @@ export WAYSCLOUD_API_KEY="wayscloud_pat_xxx..."
 | `wayscloud_vps` | API Key | `vps` |
 | `wayscloud_app` | API Key | `apps` |
 | `wayscloud_database` | **PAT** | `database:read`, `database:write` |
+| `wayscloud_iot_device` | API Key | `iot` |
+| `wayscloud_sms_sender_profile` | API Key | `sms` |
+| `wayscloud_sms_keyword` | API Key | `sms` |
+| `wayscloud_domain_verification` | **PAT** | `domain-verification` |
 
 ## Quick Start
 
@@ -124,6 +132,18 @@ terraform import wayscloud_vps.web VPS_UUID
 
 # App
 terraform import wayscloud_app.api app_ULID
+
+# IoT Device
+terraform import wayscloud_iot_device.sensor temp-sensor-01
+
+# SMS Sender Profile
+terraform import wayscloud_sms_sender_profile.alerts PROFILE_UUID
+
+# SMS Keyword
+terraform import wayscloud_sms_keyword.help KEYWORD_UUID
+
+# Domain Verification
+terraform import wayscloud_domain_verification.email VERIFICATION_UUID
 ```
 
 ## Known Limitations
@@ -144,6 +164,33 @@ These attributes are only available on initial creation:
 - `wayscloud_database.password`, `wayscloud_database.connection_string`
 - `wayscloud_redis_instance.password`
 - `wayscloud_s3_bucket.secret_key`
+- `wayscloud_iot_device.mqtt_username`, `wayscloud_iot_device.mqtt_password`
+
+### Mixed Auth Types
+
+A single provider instance uses one auth type. To use both API key and PAT resources, use provider aliases:
+
+```hcl
+provider "wayscloud" {
+  api_key = var.api_key  # API key for DNS, IoT, SMS, etc.
+}
+
+provider "wayscloud" {
+  alias   = "pat"
+  api_key = var.pat_token  # PAT for database, domain verification
+}
+
+resource "wayscloud_iot_device" "sensor" {
+  device_id = "sensor-01"
+  name      = "Sensor"
+}
+
+resource "wayscloud_domain_verification" "email" {
+  provider = wayscloud.pat
+  domain   = "example.com"
+  purpose  = "email"
+}
+```
 
 ## Rate Limits & Retries
 

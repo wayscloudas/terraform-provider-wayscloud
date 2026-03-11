@@ -173,6 +173,10 @@ func (p *WAYSCloudProvider) Resources(ctx context.Context) []func() resource.Res
 		NewDatabaseResource,
 		NewVPSResource,
 		NewAppResource,
+		NewIoTDeviceResource,
+		NewSMSSenderProfileResource,
+		NewSMSKeywordResource,
+		NewDomainVerificationResource,
 	}
 }
 

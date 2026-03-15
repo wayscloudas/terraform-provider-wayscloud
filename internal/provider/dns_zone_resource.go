@@ -232,7 +232,7 @@ func (r *DNSZoneResource) Read(ctx context.Context, req resource.ReadRequest, re
 	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/dns/zones/%s", zoneName))
 	if err != nil {
 		// Check if zone was deleted
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "DNS zone not found, removing from state", map[string]interface{}{
 				"zone_name": zoneName,
 			})
@@ -297,7 +297,7 @@ func (r *DNSZoneResource) Delete(ctx context.Context, req resource.DeleteRequest
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/dns/zones/%s", zoneName))
 	if err != nil {
 		// Ignore 404 errors (already deleted)
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "DNS zone already deleted", map[string]interface{}{
 				"zone_name": zoneName,
 			})

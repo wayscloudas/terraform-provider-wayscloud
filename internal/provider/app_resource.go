@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -403,7 +402,7 @@ func (r *AppResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/apps/%s", appID))
 	if err != nil {
 		// Check if app was deleted
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "App not found, removing from state", map[string]interface{}{
 				"id": appID,
 			})
@@ -525,7 +524,7 @@ func (r *AppResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/apps/%s", appID))
 	if err != nil {
 		// Ignore 404 errors (already deleted)
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "App already deleted", map[string]interface{}{
 				"id": appID,
 			})
@@ -591,46 +590,3 @@ func (r *AppResource) mapResponseToState(ctx context.Context, data *AppResourceM
 	}
 }
 
-// waitForReady polls the app until it's ready or timeout (if needed for future use)
-func (r *AppResource) waitForReady(ctx context.Context, appID string) (*appResponse, error) {
-	timeout := 5 * time.Minute
-	pollInterval := 10 * time.Second
-	deadline := time.Now().Add(timeout)
-
-	for time.Now().Before(deadline) {
-		respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/apps/%s", appID))
-		if err != nil {
-			return nil, err
-		}
-
-		var app appResponse
-		if err := json.Unmarshal(respBody, &app); err != nil {
-			return nil, err
-		}
-
-		tflog.Debug(ctx, "Polling app status", map[string]interface{}{
-			"id":     appID,
-			"status": app.Status,
-		})
-
-		switch app.Status {
-		case "running":
-			return &app, nil
-		case "error":
-			return nil, fmt.Errorf("app entered error state")
-		case "creating", "building", "deploying":
-			// Continue polling
-		default:
-			// Unknown status, continue polling
-		}
-
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(pollInterval):
-			// Continue
-		}
-	}
-
-	return nil, fmt.Errorf("timeout waiting for app to be ready")
-}

@@ -15,7 +15,7 @@ resource "wayscloud_dns_record" "www" {
 # A record for root domain (@)
 resource "wayscloud_dns_record" "root" {
   zone_name = wayscloud_dns_zone.example.name
-  name      = ""  # Empty string = root domain
+  name      = "" # Empty string = root domain
   type      = "A"
   value     = "192.0.2.1"
   ttl       = 300

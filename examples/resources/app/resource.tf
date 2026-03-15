@@ -8,9 +8,9 @@ resource "wayscloud_app" "web" {
   health_check_path = "/health"
 
   env_vars = {
-    NODE_ENV      = "production"
-    LOG_LEVEL     = "info"
-    API_BASE_URL  = "https://api.example.com"
+    NODE_ENV     = "production"
+    LOG_LEVEL    = "info"
+    API_BASE_URL = "https://api.example.com"
   }
 }
 

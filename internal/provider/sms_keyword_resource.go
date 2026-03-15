@@ -232,7 +232,7 @@ func (r *SMSKeywordResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/sms/keywords/%s", keywordID))
 	if err != nil {
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "SMS keyword not found, removing from state", map[string]interface{}{
 				"id": keywordID,
 			})
@@ -347,7 +347,7 @@ func (r *SMSKeywordResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/sms/keywords/%s", keywordID))
 	if err != nil {
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "SMS keyword already deleted", map[string]interface{}{
 				"id": keywordID,
 			})

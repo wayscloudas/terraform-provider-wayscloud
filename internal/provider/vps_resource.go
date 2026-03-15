@@ -380,7 +380,7 @@ func (r *VPSResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/vps/%s", vpsID))
 	if err != nil {
 		// Check if VPS was deleted
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "VPS not found, removing from state", map[string]interface{}{
 				"id": vpsID,
 			})
@@ -434,7 +434,7 @@ func (r *VPSResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/vps/%s", vpsID))
 	if err != nil {
 		// Ignore 404 errors (already deleted)
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "VPS already deleted", map[string]interface{}{
 				"id": vpsID,
 			})

@@ -326,7 +326,7 @@ func (r *DatabaseResource) Read(ctx context.Context, req resource.ReadRequest, r
 	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/databases/%s/%s", dbType, dbName))
 	if err != nil {
 		// Check if database was deleted
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "Database not found, removing from state", map[string]interface{}{
 				"name": dbName,
 			})
@@ -407,7 +407,7 @@ func (r *DatabaseResource) Delete(ctx context.Context, req resource.DeleteReques
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/databases/%s/%s", dbType, dbName))
 	if err != nil {
 		// Ignore 404 errors (already deleted)
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "Database already deleted", map[string]interface{}{
 				"name": dbName,
 			})

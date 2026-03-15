@@ -276,7 +276,7 @@ func (r *DomainVerificationResource) Read(ctx context.Context, req resource.Read
 
 	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/domain-verification/domains/%s", verificationID))
 	if err != nil {
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "Domain verification not found, removing from state", map[string]interface{}{
 				"id": verificationID,
 			})
@@ -372,7 +372,7 @@ func (r *DomainVerificationResource) Delete(ctx context.Context, req resource.De
 
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/domain-verification/domains/%s", verificationID))
 	if err != nil {
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "Domain verification already deleted", map[string]interface{}{
 				"id": verificationID,
 			})

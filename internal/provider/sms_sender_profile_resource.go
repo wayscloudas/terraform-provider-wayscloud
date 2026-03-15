@@ -283,7 +283,7 @@ func (r *SMSSenderProfileResource) Delete(ctx context.Context, req resource.Dele
 
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/sms/sender-profiles/%s", profileID))
 	if err != nil {
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "SMS sender profile already deleted", map[string]interface{}{
 				"id": profileID,
 			})

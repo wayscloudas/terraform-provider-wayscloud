@@ -317,7 +317,7 @@ func (r *DNSRecordResource) Read(ctx context.Context, req resource.ReadRequest, 
 	// API does not have a single-record GET endpoint, so list all and filter
 	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/dns/zones/%s/records", zoneName))
 	if err != nil {
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "DNS zone not found, removing record from state", map[string]interface{}{
 				"record_id": recordID,
 			})
@@ -469,7 +469,7 @@ func (r *DNSRecordResource) Delete(ctx context.Context, req resource.DeleteReque
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/dns/zones/%s/records/%s", zoneName, recordID))
 	if err != nil {
 		// Ignore 404 errors (already deleted)
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "DNS record already deleted", map[string]interface{}{
 				"record_id": recordID,
 			})

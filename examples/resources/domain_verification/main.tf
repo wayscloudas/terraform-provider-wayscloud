@@ -1,7 +1,7 @@
 # Domain verification requires PAT auth
 provider "wayscloud" {
   alias   = "pat"
-  api_key = var.wayscloud_pat_token  # wayscloud_pat_xxx...
+  api_key = var.wayscloud_pat_token # wayscloud_pat_xxx...
 }
 
 variable "wayscloud_pat_token" {

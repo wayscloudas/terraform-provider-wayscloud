@@ -265,7 +265,7 @@ func (r *IoTDeviceResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/iot/devices/%s", deviceID))
 	if err != nil {
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "IoT device not found, removing from state", map[string]interface{}{
 				"device_id": deviceID,
 			})
@@ -394,7 +394,7 @@ func (r *IoTDeviceResource) Delete(ctx context.Context, req resource.DeleteReque
 
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/iot/devices/%s", deviceID))
 	if err != nil {
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "IoT device already deleted", map[string]interface{}{
 				"device_id": deviceID,
 			})

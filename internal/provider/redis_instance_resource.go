@@ -305,7 +305,7 @@ func (r *RedisInstanceResource) Read(ctx context.Context, req resource.ReadReque
 	respBody, err := r.client.Get(ctx, fmt.Sprintf("/v1/redis/instances/%s", instanceID))
 	if err != nil {
 		// Check if instance was deleted
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "Redis instance not found, removing from state", map[string]interface{}{
 				"id": instanceID,
 			})
@@ -358,7 +358,7 @@ func (r *RedisInstanceResource) Delete(ctx context.Context, req resource.DeleteR
 	_, err := r.client.Delete(ctx, fmt.Sprintf("/v1/redis/instances/%s", instanceID))
 	if err != nil {
 		// Ignore 404 errors (already deleted)
-		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 404 {
+		if is404(err) {
 			tflog.Debug(ctx, "Redis instance already deleted", map[string]interface{}{
 				"id": instanceID,
 			})

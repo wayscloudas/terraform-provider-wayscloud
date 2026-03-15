@@ -9,11 +9,28 @@ import (
 	"log"
 	"os"
 	"strings"
+	"testing"
 
 	"github.com/wayscloudas/terraform-provider-wayscloud/internal/client"
 )
 
-// sweepClient returns an API client for resource cleanup
+// TestSweep_DNSZones is a manual test for cleaning up leftover test resources.
+// Run with: go test -v -run TestSweep_DNSZones -timeout 5m
+func TestSweep_DNSZones(t *testing.T) {
+	if os.Getenv("WAYSCLOUD_SWEEP_ENABLED") != "1" {
+		t.Skip("WAYSCLOUD_SWEEP_ENABLED must be set to 1")
+	}
+
+	c, err := sweepClient()
+	if err != nil {
+		t.Fatalf("Failed to create sweep client: %s", err)
+	}
+
+	if err := sweepDNSZones(c); err != nil {
+		t.Fatalf("DNS zone sweep failed: %s", err)
+	}
+}
+
 func sweepClient() (*client.Client, error) {
 	apiKey := os.Getenv("WAYSCLOUD_API_KEY")
 	if apiKey == "" {
@@ -23,22 +40,15 @@ func sweepClient() (*client.Client, error) {
 	return client.NewClient(apiKey, endpoint), nil
 }
 
-// sweepDNSZones removes test DNS zones (those matching "tfacc-" prefix)
-func sweepDNSZones(_ string) error {
-	c, err := sweepClient()
-	if err != nil {
-		return err
-	}
-
+func sweepDNSZones(c *client.Client) error {
 	ctx := context.Background()
 	respBody, err := c.Get(ctx, "/v1/dns/zones")
 	if err != nil {
 		return fmt.Errorf("error listing DNS zones for sweep: %w", err)
 	}
 
-	// Simple check: look for test zone names in response
 	body := string(respBody)
-	if strings.Contains(body, "tfacc-") {
+	if strings.Contains(body, "tf-acc-test-") || strings.Contains(body, "tf-test-") {
 		log.Println("[SWEEP] Found test DNS zones — manual cleanup may be needed")
 	}
 

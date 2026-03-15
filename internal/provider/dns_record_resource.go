@@ -91,6 +91,7 @@ func (r *DNSRecordResource) Metadata(ctx context.Context, req resource.MetadataR
 
 func (r *DNSRecordResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages a DNS record in WAYSCloud.
 

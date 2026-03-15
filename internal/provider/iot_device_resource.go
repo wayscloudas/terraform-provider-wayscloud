@@ -80,6 +80,7 @@ func (r *IoTDeviceResource) Metadata(ctx context.Context, req resource.MetadataR
 
 func (r *IoTDeviceResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages an IoT device in WAYSCloud.
 

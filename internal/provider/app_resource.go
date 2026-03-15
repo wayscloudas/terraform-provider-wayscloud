@@ -115,6 +115,7 @@ func (r *AppResource) Metadata(ctx context.Context, req resource.MetadataRequest
 
 func (r *AppResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages a container app in WAYSCloud App Platform.
 
@@ -372,8 +373,10 @@ func (r *AppResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	// Map response to state
+	// Map response to state, preserving env_vars from plan (API may not echo them back)
+	envVars := data.EnvVars
 	r.mapResponseToState(ctx, &data, &app)
+	data.EnvVars = envVars
 
 	tflog.Trace(ctx, "Created app", map[string]interface{}{
 		"id":   app.ID,
@@ -417,8 +420,10 @@ func (r *AppResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
-	// Map response to state
+	// Map response to state, preserving env_vars from state (API may not echo them back)
+	envVars := data.EnvVars
 	r.mapResponseToState(ctx, &data, &app)
+	data.EnvVars = envVars
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -496,8 +501,10 @@ func (r *AppResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	// Map response to state
+	// Map response to state, preserving env_vars from plan (API may not echo them back)
+	envVars := data.EnvVars
 	r.mapResponseToState(ctx, &data, &app)
+	data.EnvVars = envVars
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

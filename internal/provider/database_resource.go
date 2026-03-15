@@ -90,6 +90,7 @@ func (r *DatabaseResource) Metadata(ctx context.Context, req resource.MetadataRe
 
 func (r *DatabaseResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages a PostgreSQL or MariaDB database instance in WAYSCloud.
 
@@ -134,7 +135,13 @@ resource "wayscloud_database" "secure" {
 
 ## Import
 
-Databases can be imported using the format ` + "`type/name`" + `:
+Databases can be imported using the format ` + "`type/tier/name`" + `:
+
+` + "```bash" + `
+terraform import wayscloud_database.app postgresql/standard/myapp-prod
+` + "```" + `
+
+Legacy format ` + "`type/name`" + ` is also supported (assumes ` + "`standard`" + ` tier):
 
 ` + "```bash" + `
 terraform import wayscloud_database.app postgresql/myapp-prod
@@ -416,25 +423,32 @@ func (r *DatabaseResource) Delete(ctx context.Context, req resource.DeleteReques
 }
 
 func (r *DatabaseResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Import format: type/name (e.g., "postgresql/myapp-prod")
-	// Parse the import ID
-	var dbType, dbName string
-	_, err := fmt.Sscanf(req.ID, "%s/%s", &dbType, &dbName)
-	if err != nil || dbType == "" || dbName == "" {
-		// Try splitting by /
-		parts := splitImportID(req.ID)
-		if len(parts) != 2 {
-			resp.Diagnostics.AddError(
-				"Invalid Import ID",
-				fmt.Sprintf("Import ID must be in format 'type/name' (e.g., 'postgresql/myapp-prod'). Got: %s", req.ID),
-			)
-			return
-		}
+	// Import format: type/tier/name (e.g., "postgresql/standard/myapp-prod")
+	// Also supports legacy format: type/name (e.g., "postgresql/myapp-prod") — assumes "standard" tier
+	parts := splitImportID(req.ID)
+
+	var dbType, dbTier, dbName string
+	switch len(parts) {
+	case 3:
 		dbType = parts[0]
+		dbTier = parts[1]
+		dbName = parts[2]
+	case 2:
+		// Legacy format: type/name — assume standard tier
+		dbType = parts[0]
+		dbTier = "standard"
 		dbName = parts[1]
+	default:
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			fmt.Sprintf("Import ID must be in format 'type/tier/name' (e.g., 'postgresql/standard/myapp-prod') "+
+				"or legacy format 'type/name' (e.g., 'postgresql/myapp-prod'). Got: %s", req.ID),
+		)
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("type"), dbType)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("tier"), dbTier)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), dbName)...)
 }
 

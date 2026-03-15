@@ -76,6 +76,7 @@ func (r *DomainVerificationResource) Metadata(ctx context.Context, req resource.
 
 func (r *DomainVerificationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages a domain verification request in WAYSCloud.
 

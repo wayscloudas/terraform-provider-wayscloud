@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -26,6 +27,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &VPSResource{}
 var _ resource.ResourceWithImportState = &VPSResource{}
+var _ resource.ResourceWithValidateConfig = &VPSResource{}
 
 func NewVPSResource() resource.Resource {
 	return &VPSResource{}
@@ -95,6 +97,7 @@ func (r *VPSResource) Metadata(ctx context.Context, req resource.MetadataRequest
 
 func (r *VPSResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages a VPS (Virtual Private Server) instance in WAYSCloud.
 
@@ -464,9 +467,13 @@ func (r *VPSResource) mapResponseToState(data *VPSResourceModel, vps *vpsRespons
 	// Handle optional fields
 	if vps.DisplayName != nil {
 		data.DisplayName = types.StringValue(*vps.DisplayName)
+	} else {
+		data.DisplayName = types.StringNull()
 	}
 	if vps.OSTemplate != nil {
 		data.OSTemplate = types.StringValue(*vps.OSTemplate)
+	} else {
+		data.OSTemplate = types.StringNull()
 	}
 	if vps.IPv4Address != nil {
 		data.IPv4Address = types.StringValue(*vps.IPv4Address)
@@ -480,18 +487,55 @@ func (r *VPSResource) mapResponseToState(data *VPSResourceModel, vps *vpsRespons
 	}
 	if vps.VCPU != nil {
 		data.VCPU = types.Int64Value(*vps.VCPU)
+	} else {
+		data.VCPU = types.Int64Null()
 	}
 	if vps.RAMMB != nil {
 		data.RAMMB = types.Int64Value(*vps.RAMMB)
+	} else {
+		data.RAMMB = types.Int64Null()
 	}
 	if vps.DiskGB != nil {
 		data.DiskGB = types.Int64Value(*vps.DiskGB)
+	} else {
+		data.DiskGB = types.Int64Null()
 	}
 	if vps.MonthlyPriceNOK != nil {
 		data.MonthlyPriceNOK = types.Float64Value(*vps.MonthlyPriceNOK)
+	} else {
+		data.MonthlyPriceNOK = types.Float64Null()
 	}
 	if vps.ProvisionedAt != nil {
 		data.ProvisionedAt = types.StringValue(*vps.ProvisionedAt)
+	} else {
+		data.ProvisionedAt = types.StringNull()
+	}
+}
+
+// ValidateConfig validates the resource configuration
+func (r *VPSResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data VPSResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Windows templates require minimum 4096 MB RAM (validated server-side too,
+	// but catching it early gives a better error message)
+	if !data.OSTemplate.IsNull() && !data.OSTemplate.IsUnknown() {
+		osTemplate := data.OSTemplate.ValueString()
+		if strings.HasPrefix(osTemplate, "windows") {
+			if !data.PlanCode.IsNull() && !data.PlanCode.IsUnknown() {
+				planCode := data.PlanCode.ValueString()
+				if !strings.Contains(strings.ToLower(planCode), "windows") {
+					resp.Diagnostics.AddWarning(
+						"Possible Plan Mismatch",
+						fmt.Sprintf("OS template %q is a Windows template but plan code %q does not appear to be a Windows plan. "+
+							"Windows VPS requires Windows-specific plans with minimum 4096 MB RAM and 64 GB disk.", osTemplate, planCode),
+					)
+				}
+			}
+		}
 	}
 }
 

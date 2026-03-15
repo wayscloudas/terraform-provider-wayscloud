@@ -67,6 +67,7 @@ func (r *DNSZoneResource) Metadata(ctx context.Context, req resource.MetadataReq
 
 func (r *DNSZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages a DNS zone in WAYSCloud.
 

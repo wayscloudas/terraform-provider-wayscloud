@@ -29,7 +29,7 @@ WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open sta
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.21 (for building from source)
+- [Go](https://golang.org/doc/install) >= 1.25 (for building from source)
 - WAYSCloud account with API key
 
 ## Installation
@@ -39,7 +39,7 @@ terraform {
   required_providers {
     wayscloud = {
       source  = "wayscloudas/wayscloud"
-      version = "~> 0.1"
+      version = "~> 0.3"
     }
   }
 }
@@ -125,7 +125,7 @@ terraform import wayscloud_redis_instance.cache INSTANCE_UUID
 terraform import wayscloud_s3_bucket.uploads bucket-name
 
 # Database
-terraform import wayscloud_database.app postgresql/db-name
+terraform import wayscloud_database.app postgresql/standard/db-name
 
 # VPS
 terraform import wayscloud_vps.web VPS_UUID

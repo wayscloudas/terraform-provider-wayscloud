@@ -87,7 +87,7 @@ terraform {
   required_providers {
     wayscloud = {
       source  = "wayscloud/wayscloud"
-      version = "~> 0.1.0"
+      version = "~> 0.3"
     }
   }
 }
@@ -182,7 +182,11 @@ func (p *WAYSCloudProvider) Resources(ctx context.Context) []func() resource.Res
 
 func (p *WAYSCloudProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		// Data sources will be added here
+		NewRegionsDataSource,
+		NewDNSZonesDataSource,
+		NewVPSPlansDataSource,
+		NewVPSOSTemplatesDataSource,
+		NewAppPlansDataSource,
 	}
 }
 

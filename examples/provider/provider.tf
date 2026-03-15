@@ -9,7 +9,7 @@ terraform {
   required_providers {
     wayscloud = {
       source  = "wayscloud/wayscloud"
-      version = "~> 0.1.0"
+      version = "~> 0.3"
     }
   }
 }

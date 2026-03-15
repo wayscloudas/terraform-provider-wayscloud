@@ -81,6 +81,7 @@ func (r *RedisInstanceResource) Metadata(ctx context.Context, req resource.Metad
 
 func (r *RedisInstanceResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages a Redis instance in WAYSCloud.
 

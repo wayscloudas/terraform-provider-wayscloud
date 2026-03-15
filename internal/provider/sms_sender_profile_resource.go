@@ -71,6 +71,7 @@ func (r *SMSSenderProfileResource) Metadata(ctx context.Context, req resource.Me
 
 func (r *SMSSenderProfileResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages an SMS sender profile in WAYSCloud.
 

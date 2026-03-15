@@ -78,6 +78,7 @@ func (r *SMSKeywordResource) Metadata(ctx context.Context, req resource.Metadata
 
 func (r *SMSKeywordResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages an SMS keyword in WAYSCloud.
 

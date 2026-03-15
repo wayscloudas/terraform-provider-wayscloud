@@ -81,6 +81,7 @@ func (r *S3BucketResource) Metadata(ctx context.Context, req resource.MetadataRe
 
 func (r *S3BucketResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 0,
 		MarkdownDescription: `
 Manages an S3-compatible storage bucket in WAYSCloud.
 

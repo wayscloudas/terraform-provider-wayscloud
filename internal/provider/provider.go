@@ -31,6 +31,7 @@ type WAYSCloudProvider struct {
 // WAYSCloudProviderModel describes the provider data model.
 type WAYSCloudProviderModel struct {
 	APIKey   types.String `tfsdk:"api_key"`
+	PATToken types.String `tfsdk:"pat_token"`
 	Endpoint types.String `tfsdk:"endpoint"`
 }
 
@@ -46,39 +47,33 @@ The WAYSCloud provider allows you to manage WAYSCloud resources using Terraform.
 
 ## Authentication
 
-The provider supports authentication via API Key. You can configure it in three ways:
+The provider supports two authentication methods:
 
-1. **Provider configuration** (not recommended for production):
-` + "```hcl" + `
-provider "wayscloud" {
-  api_key = "wayscloud_api_xxx..."
-}
-` + "```" + `
+- **API Key** (` + "`api_key`" + ` / ` + "`WAYSCLOUD_API_KEY`" + `): For DNS, VPS, Storage, Redis, IoT, SMS, and App resources.
+- **PAT Token** (` + "`pat_token`" + ` / ` + "`WAYSCLOUD_PAT_TOKEN`" + `): For Database and Domain Verification resources.
 
-2. **Environment variable** (recommended):
+Both can be configured simultaneously for full access to all resources.
+
+### Environment variables (recommended)
+
 ` + "```bash" + `
 export WAYSCLOUD_API_KEY="wayscloud_api_xxx..."
+export WAYSCLOUD_PAT_TOKEN="wayscloud_pat_xxx..."
 ` + "```" + `
 
-3. **Terraform variable**:
+### Provider configuration
+
 ` + "```hcl" + `
-variable "wayscloud_api_key" {
-  type      = string
-  sensitive = true
-}
-
 provider "wayscloud" {
-  api_key = var.wayscloud_api_key
+  api_key   = var.wayscloud_api_key    # DNS, VPS, Storage, Redis, IoT, SMS, Apps
+  pat_token = var.wayscloud_pat_token  # Database, Domain Verification
 }
 ` + "```" + `
 
-## Getting an API Key
+## Getting Credentials
 
-1. Log in to [my.wayscloud.services](https://my.wayscloud.services)
-2. Navigate to **Account** → **API Keys**
-3. Click **Create API Key**
-4. Select the services you need access to (DNS, VPS, Storage, etc.)
-5. Copy the generated key immediately (it's only shown once)
+1. **API Key:** Log in to [my.wayscloud.services](https://my.wayscloud.services) → Account → API Keys
+2. **PAT Token:** Log in to [my.wayscloud.services](https://my.wayscloud.services) → Account → Personal Access Tokens
 
 ## Example Usage
 
@@ -87,7 +82,7 @@ terraform {
   required_providers {
     wayscloud = {
       source  = "wayscloud/wayscloud"
-      version = "~> 0.3"
+      version = "~> 0.4"
     }
   }
 }
@@ -109,7 +104,12 @@ resource "wayscloud_dns_record" "www" {
 `,
 		Attributes: map[string]schema.Attribute{
 			"api_key": schema.StringAttribute{
-				MarkdownDescription: "WAYSCloud API Key for authentication. Can also be set via `WAYSCLOUD_API_KEY` environment variable.",
+				MarkdownDescription: "WAYSCloud API Key for authentication. Used for DNS, VPS, Storage, Redis, IoT, SMS, and App resources. Can also be set via `WAYSCLOUD_API_KEY` environment variable. If a PAT token (`wayscloud_pat_...`) is provided here and no separate `pat_token` is set, it will be used for both API key and PAT authentication.",
+				Optional:            true,
+				Sensitive:           true,
+			},
+			"pat_token": schema.StringAttribute{
+				MarkdownDescription: "WAYSCloud Personal Access Token (PAT) for resources that require PAT authentication (Database, Domain Verification). Can also be set via `WAYSCLOUD_PAT_TOKEN` environment variable. Format: `wayscloud_pat_xxx...`.",
 				Optional:            true,
 				Sensitive:           true,
 			},
@@ -132,28 +132,34 @@ func (p *WAYSCloudProvider) Configure(ctx context.Context, req provider.Configur
 
 	// Check environment variables for defaults
 	apiKey := os.Getenv("WAYSCLOUD_API_KEY")
+	patToken := os.Getenv("WAYSCLOUD_PAT_TOKEN")
 	endpoint := os.Getenv("WAYSCLOUD_ENDPOINT")
 
 	// Override with explicit configuration if provided
 	if !config.APIKey.IsNull() {
 		apiKey = config.APIKey.ValueString()
 	}
+	if !config.PATToken.IsNull() {
+		patToken = config.PATToken.ValueString()
+	}
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
 	}
 
 	// Validate required configuration
-	if apiKey == "" {
+	if apiKey == "" && patToken == "" {
 		resp.Diagnostics.AddError(
-			"Missing API Key",
-			"The provider cannot create the WAYSCloud client because the API key is missing. "+
-				"Set it in the provider configuration or via the WAYSCLOUD_API_KEY environment variable.",
+			"Missing Authentication",
+			"The provider requires at least one of: api_key (WAYSCLOUD_API_KEY) or pat_token (WAYSCLOUD_PAT_TOKEN). "+
+				"Use api_key for DNS, VPS, Storage, Redis, IoT, SMS, and App resources. "+
+				"Use pat_token for Database and Domain Verification resources. "+
+				"Both can be configured simultaneously for full access.",
 		)
 		return
 	}
 
-	// Create WAYSCloud client
-	c := client.NewClient(apiKey, endpoint)
+	// Create WAYSCloud client with dual auth support
+	c := client.NewClientDualAuth(apiKey, patToken, endpoint)
 
 	tflog.Debug(ctx, "Created WAYSCloud client", map[string]interface{}{
 		"endpoint": c.BaseURL,

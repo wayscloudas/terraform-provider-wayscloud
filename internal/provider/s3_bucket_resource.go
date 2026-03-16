@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"time"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -259,6 +260,7 @@ func (r *S3BucketResource) Create(ctx context.Context, req resource.CreateReques
 	data.IsActive = types.BoolValue(true)
 	data.TotalStorageGB = types.Float64Value(0)
 	data.TotalObjects = types.Int64Value(0)
+	data.CreatedAt = types.StringValue(time.Now().UTC().Format(time.RFC3339))
 
 	tflog.Trace(ctx, "Created S3 bucket", map[string]interface{}{
 		"bucket_name": createResp.BucketName,

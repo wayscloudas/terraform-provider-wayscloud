@@ -55,9 +55,10 @@ type VPSResourceModel struct {
 	VCPU            types.Int64   `tfsdk:"vcpu"`
 	RAMMB           types.Int64   `tfsdk:"ram_mb"`
 	DiskGB          types.Int64   `tfsdk:"disk_gb"`
-	MonthlyPriceNOK types.Float64 `tfsdk:"monthly_price_nok"`
-	CreatedAt       types.String  `tfsdk:"created_at"`
-	ProvisionedAt   types.String  `tfsdk:"provisioned_at"`
+	MonthlyPrice  types.Float64 `tfsdk:"monthly_price"`
+	Currency      types.String  `tfsdk:"currency"`
+	CreatedAt     types.String  `tfsdk:"created_at"`
+	ProvisionedAt types.String  `tfsdk:"provisioned_at"`
 }
 
 // API request/response structs
@@ -86,7 +87,8 @@ type vpsResponse struct {
 	VCPU            *int64   `json:"vcpu,omitempty"`
 	RAMMB           *int64   `json:"ram_mb,omitempty"`
 	DiskGB          *int64   `json:"disk_gb,omitempty"`
-	MonthlyPriceNOK *float64 `json:"monthly_price_nok,omitempty"`
+	MonthlyPrice *float64 `json:"monthly_price,omitempty"`
+	Currency     *string  `json:"currency,omitempty"`
 	CreatedAt       string   `json:"created_at"`
 	ProvisionedAt   *string  `json:"provisioned_at,omitempty"`
 }
@@ -114,7 +116,7 @@ resource "wayscloud_vps" "web" {
   display_name = "Production Web Server"
   plan_code   = "NO-Start-Linux-2cpu-4096mb-30gb"
   region      = "NO"
-  os_template = "ubuntu-22.04"
+  os_template = "ubuntu-24.04"
 
   ssh_keys = [
     "ssh-rsa AAAAB3NzaC1yc2E..."
@@ -131,9 +133,9 @@ output "server_ip" {
 ` + "```hcl" + `
 resource "wayscloud_vps" "win" {
   hostname    = "win01.example.com"
-  plan_code   = "NO-Premium-Windows-4cpu-8192mb-100gb"
+  plan_code   = "NO-Medium-Windows-4cpu-4096mb-64gb"
   region      = "NO"
-  os_template = "windows-server-2022"
+  os_template = "windows-server-2025"
 }
 ` + "```" + `
 
@@ -195,7 +197,7 @@ SSH keys are injected via cloud-init during initial boot.
 			},
 			"os_template": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "OS template. Example: `ubuntu-22.04`, `debian-12`, `windows-server-2022`.",
+				MarkdownDescription: "OS template. Example: `ubuntu-24.04`, `debian-12`, `windows-server-2025`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -245,11 +247,18 @@ SSH keys are injected via cloud-init during initial boot.
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
-			"monthly_price_nok": schema.Float64Attribute{
+			"monthly_price": schema.Float64Attribute{
 				Computed:            true,
-				MarkdownDescription: "Monthly price in NOK.",
+				MarkdownDescription: "Monthly price in the customer's preferred currency.",
 				PlanModifiers: []planmodifier.Float64{
 					float64planmodifier.UseStateForUnknown(),
+				},
+			},
+			"currency": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "Currency code for pricing (e.g., `NOK`, `SEK`, `DKK`, `EUR`).",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"created_at": schema.StringAttribute{
@@ -269,7 +278,7 @@ func (r *VPSResource) Configure(ctx context.Context, req resource.ConfigureReque
 		return
 	}
 
-	client, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*client.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -278,7 +287,16 @@ func (r *VPSResource) Configure(ctx context.Context, req resource.ConfigureReque
 		return
 	}
 
-	r.client = client
+	if c.APIKey == "" {
+		resp.Diagnostics.AddError(
+			"API Key Required for VPS Resource",
+			"The wayscloud_vps resource requires an API Key with 'vps' service permissions. "+
+				"Configure via api_key in the provider block or set the WAYSCLOUD_API_KEY environment variable.\n\n"+
+				"If you only have a PAT token (wayscloud_pat_...), you also need a separate API key for VPS resources.",
+		)
+	}
+
+	r.client = c
 }
 
 func (r *VPSResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -500,10 +518,15 @@ func (r *VPSResource) mapResponseToState(data *VPSResourceModel, vps *vpsRespons
 	} else {
 		data.DiskGB = types.Int64Null()
 	}
-	if vps.MonthlyPriceNOK != nil {
-		data.MonthlyPriceNOK = types.Float64Value(*vps.MonthlyPriceNOK)
+	if vps.MonthlyPrice != nil {
+		data.MonthlyPrice = types.Float64Value(*vps.MonthlyPrice)
 	} else {
-		data.MonthlyPriceNOK = types.Float64Null()
+		data.MonthlyPrice = types.Float64Null()
+	}
+	if vps.Currency != nil {
+		data.Currency = types.StringValue(*vps.Currency)
+	} else {
+		data.Currency = types.StringNull()
 	}
 	if vps.ProvisionedAt != nil {
 		data.ProvisionedAt = types.StringValue(*vps.ProvisionedAt)

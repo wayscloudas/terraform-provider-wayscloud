@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -239,15 +240,19 @@ func (r *DatabaseResource) Configure(ctx context.Context, req resource.Configure
 
 	// Database resource requires PAT (Personal Access Token), not API Key
 	if c.PATToken == "" {
-		resp.Diagnostics.AddWarning(
-			"PAT Token Recommended for Database Resource",
+		resp.Diagnostics.AddError(
+			"PAT Token Required for Database Resource",
 			"The wayscloud_database resource requires a Personal Access Token (PAT) with "+
-				"'database:read' and 'database:write' scopes. You are using an API key which may "+
-				"not have the required permissions.\n\n"+
-				"To create a PAT:\n"+
+				"'database:read' and 'database:write' scopes.\n\n"+
+				"To configure:\n"+
 				"1. Go to my.wayscloud.services → Account → Personal Access Tokens\n"+
 				"2. Create a token with 'database:read' and 'database:write' scopes\n"+
-				"3. Set WAYSCLOUD_API_KEY=wayscloud_pat_xxx... (the provider auto-detects the token type)",
+				"3. Set pat_token in the provider block or WAYSCLOUD_PAT_TOKEN environment variable\n\n"+
+				"Example:\n"+
+				"  provider \"wayscloud\" {\n"+
+				"    api_key   = \"wayscloud_api_xxx...\"   # For VPS, DNS, etc.\n"+
+				"    pat_token = \"wayscloud_pat_xxx...\"   # For Database, Domain Verification\n"+
+				"  }",
 		)
 	}
 
@@ -299,6 +304,7 @@ func (r *DatabaseResource) Create(ctx context.Context, req resource.CreateReques
 	data.ConnectionString = types.StringValue(createResp.ConnectionString)
 	data.Status = types.StringValue("running")
 	data.SizeMB = types.Float64Value(0)
+	data.CreatedAt = types.StringValue(time.Now().UTC().Format(time.RFC3339))
 
 	tflog.Trace(ctx, "Created database", map[string]interface{}{
 		"name":           createResp.FriendlyName,

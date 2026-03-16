@@ -1,4 +1,4 @@
-VERSION=0.3.1
+VERSION=0.4.0
 BINARY=terraform-provider-wayscloud
 GOBIN=$(shell go env GOBIN)
 ifeq ($(GOBIN),)

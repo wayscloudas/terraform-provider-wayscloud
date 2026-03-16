@@ -255,8 +255,8 @@ terraform import wayscloud_app.api app_01ARZ3NDEKTSV4RRFFQ69G5FAV
 			"min_instances": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Default:             int64default.StaticInt64(1),
-				MarkdownDescription: "Minimum instances. Set to 0 for scale-to-zero. Default: `1`.",
+				Default:             int64default.StaticInt64(0),
+				MarkdownDescription: "Minimum instances. Set to 0 for scale-to-zero. Default: `0`.",
 			},
 			"max_instances": schema.Int64Attribute{
 				Optional:            true,

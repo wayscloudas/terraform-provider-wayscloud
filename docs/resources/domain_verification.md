@@ -33,22 +33,8 @@ description: |-
   terraform import wayscloud_domain_verification.email 550e8400-e29b-41d4-a716-446655440000
   
   Authentication
-  This resource requires a Personal Access Token (PAT) instead of an API key:
-  
-  export WAYSCLOUD_API_KEY="wayscloud_pat_xxx..."
-  
-  If you also use API key resources, use provider aliases:
-  
-  provider "wayscloud" {
-    alias   = "pat"
-    api_key = "wayscloud_pat_xxx..."
-  }
-  
-  resource "wayscloud_domain_verification" "email" {
-    provider = wayscloud.pat
-    domain   = "example.com"
-    purpose  = "email"
-  }
+  This resource requires a Personal Access Token (PAT) with domain-verification scope.
+  Configure via pat_token in the provider block or set the WAYSCLOUD_PAT_TOKEN environment variable.
 ---
 
 # wayscloud_domain_verification (Resource)
@@ -92,24 +78,21 @@ terraform import wayscloud_domain_verification.email 550e8400-e29b-41d4-a716-446
 
 ## Authentication
 
-This resource requires a **Personal Access Token (PAT)** instead of an API key:
+This resource requires a **Personal Access Token (PAT)** with `domain-verification` scope.
+
+Configure via `pat_token` in the provider block or set the `WAYSCLOUD_PAT_TOKEN` environment variable:
 
 ```bash
-export WAYSCLOUD_API_KEY="wayscloud_pat_xxx..."
+export WAYSCLOUD_API_KEY="wayscloud_api_xxx..."       # For DNS records
+export WAYSCLOUD_PAT_TOKEN="wayscloud_pat_xxx..."     # For domain verification
 ```
 
-If you also use API key resources, use provider aliases:
+Or in the provider configuration:
 
 ```hcl
 provider "wayscloud" {
-  alias   = "pat"
-  api_key = "wayscloud_pat_xxx..."
-}
-
-resource "wayscloud_domain_verification" "email" {
-  provider = wayscloud.pat
-  domain   = "example.com"
-  purpose  = "email"
+  api_key   = var.wayscloud_api_key    # For DNS records
+  pat_token = var.wayscloud_pat_token  # For domain verification
 }
 ```
 

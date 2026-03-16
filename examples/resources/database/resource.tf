@@ -1,3 +1,6 @@
+# Database resources require PAT auth (pat_token)
+# Set WAYSCLOUD_PAT_TOKEN="wayscloud_pat_xxx..." with database:read + database:write scopes
+
 # PostgreSQL database for web application
 resource "wayscloud_database" "app" {
   name        = "myapp-production"
@@ -41,12 +44,3 @@ output "app_db_connection_string" {
   sensitive   = true
   description = "Full connection string"
 }
-
-# Example: Use with application deployment
-# resource "wayscloud_app" "myapp" {
-#   name = "my-application"
-#
-#   environment = {
-#     DATABASE_URL = wayscloud_database.app.connection_string
-#   }
-# }

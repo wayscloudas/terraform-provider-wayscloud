@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -395,7 +396,7 @@ func (r *DomainVerificationResource) mapResponseToState(ctx context.Context, dat
 	data.ID = types.StringValue(v.ID)
 	data.Domain = types.StringValue(v.Domain)
 	data.Purpose = types.StringValue(v.Purpose)
-	data.VerificationMethod = types.StringValue(v.VerificationMethod)
+	data.VerificationMethod = types.StringValue(strings.ToLower(v.VerificationMethod))
 	data.Status = types.StringValue(v.Status)
 	data.DNSChallenge = types.StringValue(v.DNSChallenge)
 	data.DNSRecordName = types.StringValue(v.DNSRecordName)

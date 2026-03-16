@@ -31,19 +31,25 @@ type AppPlansDataSourceModel struct {
 }
 
 type AppPlanModel struct {
-	ID              types.String  `tfsdk:"id"`
-	Name            types.String  `tfsdk:"name"`
-	VCPU            types.Float64 `tfsdk:"vcpu"`
-	RAMMB           types.Int64   `tfsdk:"ram_mb"`
-	MonthlyPriceNOK types.Float64 `tfsdk:"monthly_price_nok"`
+	ID           types.String  `tfsdk:"id"`
+	Name         types.String  `tfsdk:"name"`
+	CPUCores     types.Float64 `tfsdk:"cpu_cores"`
+	MemoryMB     types.Int64   `tfsdk:"memory_mb"`
+	DiskGB       types.Int64   `tfsdk:"disk_gb"`
+	MonthlyPrice types.Float64 `tfsdk:"monthly_price"`
+	HourlyRate   types.Float64 `tfsdk:"hourly_rate"`
+	Currency     types.String  `tfsdk:"currency"`
 }
 
 type appPlanResponse struct {
-	ID              string  `json:"id"`
-	Name            string  `json:"name"`
-	VCPU            float64 `json:"vcpu"`
-	RAMMB           int64   `json:"ram_mb"`
-	MonthlyPriceNOK float64 `json:"monthly_price_nok"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	CPUCores     float64  `json:"cpu_cores"`
+	MemoryMB     int64    `json:"memory_mb"`
+	DiskGB       int64    `json:"disk_gb"`
+	MonthlyPrice float64  `json:"price_monthly"`
+	HourlyRate   *float64 `json:"hourly_rate,omitempty"`
+	Currency     string   `json:"currency"`
 }
 
 func (d *AppPlansDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -52,7 +58,7 @@ func (d *AppPlansDataSource) Metadata(ctx context.Context, req datasource.Metada
 
 func (d *AppPlansDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Fetches the list of available App Platform plans.",
+		MarkdownDescription: "Fetches the list of available App Platform plans. Prices are returned in the customer's preferred currency.",
 		Attributes: map[string]schema.Attribute{
 			"plans": schema.ListNestedAttribute{
 				Computed:            true,
@@ -67,17 +73,29 @@ func (d *AppPlansDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 							Computed:            true,
 							MarkdownDescription: "Plan display name.",
 						},
-						"vcpu": schema.Float64Attribute{
+						"cpu_cores": schema.Float64Attribute{
 							Computed:            true,
-							MarkdownDescription: "Number of virtual CPUs.",
+							MarkdownDescription: "Number of CPU cores.",
 						},
-						"ram_mb": schema.Int64Attribute{
+						"memory_mb": schema.Int64Attribute{
 							Computed:            true,
-							MarkdownDescription: "RAM in megabytes.",
+							MarkdownDescription: "Memory in megabytes.",
 						},
-						"monthly_price_nok": schema.Float64Attribute{
+						"disk_gb": schema.Int64Attribute{
 							Computed:            true,
-							MarkdownDescription: "Monthly price in NOK.",
+							MarkdownDescription: "Disk size in gigabytes.",
+						},
+						"monthly_price": schema.Float64Attribute{
+							Computed:            true,
+							MarkdownDescription: "Monthly price in the customer's preferred currency.",
+						},
+						"hourly_rate": schema.Float64Attribute{
+							Computed:            true,
+							MarkdownDescription: "Hourly rate for on-demand usage.",
+						},
+						"currency": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "Currency code (e.g., `NOK`, `SEK`, `DKK`, `EUR`).",
 						},
 					},
 				},
@@ -124,12 +142,19 @@ func (d *AppPlansDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	var data AppPlansDataSourceModel
 	for _, p := range plans {
+		hourlyRate := types.Float64Null()
+		if p.HourlyRate != nil {
+			hourlyRate = types.Float64Value(*p.HourlyRate)
+		}
 		data.Plans = append(data.Plans, AppPlanModel{
-			ID:              types.StringValue(p.ID),
-			Name:            types.StringValue(p.Name),
-			VCPU:            types.Float64Value(p.VCPU),
-			RAMMB:           types.Int64Value(p.RAMMB),
-			MonthlyPriceNOK: types.Float64Value(p.MonthlyPriceNOK),
+			ID:           types.StringValue(p.ID),
+			Name:         types.StringValue(p.Name),
+			CPUCores:     types.Float64Value(p.CPUCores),
+			MemoryMB:     types.Int64Value(p.MemoryMB),
+			DiskGB:       types.Int64Value(p.DiskGB),
+			MonthlyPrice: types.Float64Value(p.MonthlyPrice),
+			HourlyRate:   hourlyRate,
+			Currency:     types.StringValue(p.Currency),
 		})
 	}
 

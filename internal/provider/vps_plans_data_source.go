@@ -31,25 +31,28 @@ type VPSPlansDataSourceModel struct {
 }
 
 type VPSPlanModel struct {
-	Code            types.String  `tfsdk:"code"`
-	Name            types.String  `tfsdk:"name"`
-	VCPU            types.Int64   `tfsdk:"vcpu"`
-	RAMMB           types.Int64   `tfsdk:"ram_mb"`
-	DiskGB          types.Int64   `tfsdk:"disk_gb"`
-	MonthlyPriceNOK types.Float64 `tfsdk:"monthly_price_nok"`
-	Region          types.String  `tfsdk:"region"`
-	Platform        types.String  `tfsdk:"platform"`
+	PlanCode     types.String  `tfsdk:"plan_code"`
+	Name         types.String  `tfsdk:"name"`
+	CPUCores     types.Int64   `tfsdk:"cpu_cores"`
+	RAMMB        types.Int64   `tfsdk:"ram_mb"`
+	DiskGB       types.Int64   `tfsdk:"disk_gb"`
+	MonthlyPrice types.Float64 `tfsdk:"monthly_price"`
+	Currency     types.String  `tfsdk:"currency"`
+	Region       types.String  `tfsdk:"region"`
+	Platform     types.String  `tfsdk:"platform"`
 }
 
 type vpsPlanResponse struct {
-	Code            string  `json:"code"`
-	Name            string  `json:"name"`
-	VCPU            int64   `json:"vcpu"`
-	RAMMB           int64   `json:"ram_mb"`
-	DiskGB          int64   `json:"disk_gb"`
-	MonthlyPriceNOK float64 `json:"monthly_price_nok"`
-	Region          string  `json:"region"`
-	Platform        string  `json:"platform"`
+	SKU          string  `json:"sku"`
+	PlanCode     *string `json:"plan_code"`
+	Name         string  `json:"name"`
+	Provider     string  `json:"provider"`
+	CPUCores     int64   `json:"cpu_cores"`
+	RAMMB        int64   `json:"ram_mb"`
+	DiskGB       int64   `json:"disk_gb"`
+	MonthlyPrice float64 `json:"monthly_price"`
+	Currency     string  `json:"currency"`
+	IsActive     bool    `json:"is_active"`
 }
 
 func (d *VPSPlansDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -58,14 +61,14 @@ func (d *VPSPlansDataSource) Metadata(ctx context.Context, req datasource.Metada
 
 func (d *VPSPlansDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Fetches the list of available VPS plans.",
+		MarkdownDescription: "Fetches the list of available VPS plans. Prices are returned in the customer's preferred currency.",
 		Attributes: map[string]schema.Attribute{
 			"plans": schema.ListNestedAttribute{
 				Computed:            true,
 				MarkdownDescription: "List of available VPS plans.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"code": schema.StringAttribute{
+						"plan_code": schema.StringAttribute{
 							Computed:            true,
 							MarkdownDescription: "Plan code for use in `wayscloud_vps` resource.",
 						},
@@ -73,9 +76,9 @@ func (d *VPSPlansDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 							Computed:            true,
 							MarkdownDescription: "Plan display name.",
 						},
-						"vcpu": schema.Int64Attribute{
+						"cpu_cores": schema.Int64Attribute{
 							Computed:            true,
-							MarkdownDescription: "Number of virtual CPUs.",
+							MarkdownDescription: "Number of CPU cores.",
 						},
 						"ram_mb": schema.Int64Attribute{
 							Computed:            true,
@@ -85,9 +88,13 @@ func (d *VPSPlansDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 							Computed:            true,
 							MarkdownDescription: "Disk size in gigabytes.",
 						},
-						"monthly_price_nok": schema.Float64Attribute{
+						"monthly_price": schema.Float64Attribute{
 							Computed:            true,
-							MarkdownDescription: "Monthly price in NOK.",
+							MarkdownDescription: "Monthly price in the customer's preferred currency.",
+						},
+						"currency": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "Currency code (e.g., `NOK`, `SEK`, `DKK`, `EUR`).",
 						},
 						"region": schema.StringAttribute{
 							Computed:            true,
@@ -124,7 +131,7 @@ func (d *VPSPlansDataSource) Configure(ctx context.Context, req datasource.Confi
 func (d *VPSPlansDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	tflog.Debug(ctx, "Reading VPS plans data source")
 
-	respBody, err := d.client.Get(ctx, "/v1/vps/plans")
+	respBody, err := d.client.Get(ctx, "/v1/vps/plans/")
 	if err != nil {
 		resp.Diagnostics.Append(dataSourceDiagnostic("wayscloud_vps_plans", err)...)
 		return
@@ -142,15 +149,22 @@ func (d *VPSPlansDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	var data VPSPlansDataSourceModel
 	for _, p := range plans {
+		planCode := ""
+		if p.PlanCode != nil {
+			planCode = *p.PlanCode
+		} else {
+			planCode = p.SKU
+		}
 		data.Plans = append(data.Plans, VPSPlanModel{
-			Code:            types.StringValue(p.Code),
-			Name:            types.StringValue(p.Name),
-			VCPU:            types.Int64Value(p.VCPU),
-			RAMMB:           types.Int64Value(p.RAMMB),
-			DiskGB:          types.Int64Value(p.DiskGB),
-			MonthlyPriceNOK: types.Float64Value(p.MonthlyPriceNOK),
-			Region:          types.StringValue(p.Region),
-			Platform:        types.StringValue(p.Platform),
+			PlanCode:     types.StringValue(planCode),
+			Name:         types.StringValue(p.Name),
+			CPUCores:     types.Int64Value(p.CPUCores),
+			RAMMB:        types.Int64Value(p.RAMMB),
+			DiskGB:       types.Int64Value(p.DiskGB),
+			MonthlyPrice: types.Float64Value(p.MonthlyPrice),
+			Currency:     types.StringValue(p.Currency),
+			Region:       types.StringValue(""),
+			Platform:     types.StringValue(""),
 		})
 	}
 

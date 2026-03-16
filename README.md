@@ -16,7 +16,7 @@ WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open sta
 |---------|----------|-------------|
 | **DNS** | `wayscloud_dns_zone` | Authoritative DNS hosting |
 | **DNS** | `wayscloud_dns_record` | A, AAAA, CNAME, MX, TXT, SRV records |
-| **Compute** | `wayscloud_vps` | Virtual Private Servers |
+| **Compute** | `wayscloud_vps` | Virtual Private Servers (Linux & Windows) |
 | **Storage** | `wayscloud_s3_bucket` | S3-compatible object storage |
 | **Database** | `wayscloud_database` | Managed PostgreSQL & MariaDB |
 | **Cache** | `wayscloud_redis_instance` | Managed Redis |
@@ -26,11 +26,13 @@ WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open sta
 | **SMS** | `wayscloud_sms_keyword` | SMS inbound keyword handling |
 | **Domains** | `wayscloud_domain_verification` | Domain ownership verification |
 
+**Data sources:** `wayscloud_regions`, `wayscloud_dns_zones`, `wayscloud_vps_plans`, `wayscloud_vps_os_templates`, `wayscloud_app_plans`
+
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.25 (for building from source)
-- WAYSCloud account with API key
+- WAYSCloud account with API key and/or PAT token
 
 ## Installation
 
@@ -38,8 +40,8 @@ WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open sta
 terraform {
   required_providers {
     wayscloud = {
-      source  = "wayscloudas/wayscloud"
-      version = "~> 0.3"
+      source  = "wayscloud/wayscloud"
+      version = "~> 0.4"
     }
   }
 }
@@ -49,46 +51,54 @@ provider "wayscloud" {}
 
 ## Authentication
 
-### API Key (Recommended)
+The provider supports two authentication methods that can be used independently or together:
+
+| Auth Type | Header | Used For | Environment Variable |
+|-----------|--------|----------|---------------------|
+| **API Key** | `X-API-Key` | DNS, VPS, Storage, Redis, IoT, SMS, Apps | `WAYSCLOUD_API_KEY` |
+| **PAT Token** | `Authorization: Bearer` | Database, Domain Verification | `WAYSCLOUD_PAT_TOKEN` |
+
+### Option 1: Environment variables (recommended)
 
 ```bash
-export WAYSCLOUD_API_KEY="wayscloud_api_xxx..."
+export WAYSCLOUD_API_KEY="wayscloud_api_xxx..."       # For DNS, VPS, Storage, etc.
+export WAYSCLOUD_PAT_TOKEN="wayscloud_pat_xxx..."     # For Database, Domain Verification
 ```
 
-Or in provider configuration:
+### Option 2: Provider configuration
 
 ```hcl
 provider "wayscloud" {
-  api_key = var.wayscloud_api_key  # Never hardcode!
+  api_key   = var.wayscloud_api_key    # For DNS, VPS, Storage, Redis, IoT, SMS, Apps
+  pat_token = var.wayscloud_pat_token  # For Database, Domain Verification
 }
 ```
 
-### Personal Access Token (PAT)
-
-Required for `wayscloud_database` and `wayscloud_domain_verification`. The provider auto-detects token type.
-
-```bash
-export WAYSCLOUD_API_KEY="wayscloud_pat_xxx..."
-```
+### Auth requirements per resource
 
 | Resource | Auth Type | Scopes |
 |----------|-----------|--------|
 | `wayscloud_dns_zone` | API Key | `dns` |
 | `wayscloud_dns_record` | API Key | `dns` |
-| `wayscloud_redis_instance` | API Key | `redis` |
-| `wayscloud_s3_bucket` | API Key | `storage` |
 | `wayscloud_vps` | API Key | `vps` |
+| `wayscloud_s3_bucket` | API Key | `storage` |
+| `wayscloud_redis_instance` | API Key | `redis` |
 | `wayscloud_app` | API Key | `apps` |
-| `wayscloud_database` | **PAT** | `database:read`, `database:write` |
 | `wayscloud_iot_device` | API Key | `iot` |
 | `wayscloud_sms_sender_profile` | API Key | `sms` |
 | `wayscloud_sms_keyword` | API Key | `sms` |
+| `wayscloud_database` | **PAT** | `database:read`, `database:write` |
 | `wayscloud_domain_verification` | **PAT** | `domain-verification` |
+
+### Getting credentials
+
+1. **API Key:** Log in to [my.wayscloud.services](https://my.wayscloud.services) → Account → API Keys → Create API Key
+2. **PAT Token:** Log in to [my.wayscloud.services](https://my.wayscloud.services) → Account → Personal Access Tokens → Create Token (select required scopes)
 
 ## Quick Start
 
 ```hcl
-# Create a DNS zone and record
+# DNS zone and record
 resource "wayscloud_dns_zone" "example" {
   name = "example.com"
 }
@@ -101,11 +111,21 @@ resource "wayscloud_dns_record" "www" {
   ttl       = 300
 }
 
-# Create a Redis cache
-resource "wayscloud_redis_instance" "cache" {
-  name   = "my-cache"
-  region = "no"
-  plan   = "redis-starter"
+# VPS with Ubuntu
+resource "wayscloud_vps" "web" {
+  hostname    = "web01.example.com"
+  plan_code   = "NO-Start-Linux-2cpu-4096mb-30gb"
+  region      = "NO"
+  os_template = "ubuntu-24.04"
+
+  ssh_keys = ["ssh-rsa AAAAB3..."]
+}
+
+# Managed database (requires PAT)
+resource "wayscloud_database" "app" {
+  name = "myapp-prod"
+  type = "postgresql"
+  tier = "standard"
 }
 ```
 
@@ -118,17 +138,17 @@ terraform import wayscloud_dns_zone.example example.com
 # DNS Record
 terraform import wayscloud_dns_record.www example.com/RECORD_UUID
 
-# Redis Instance
-terraform import wayscloud_redis_instance.cache INSTANCE_UUID
+# VPS
+terraform import wayscloud_vps.web VPS_UUID
 
 # S3 Bucket
 terraform import wayscloud_s3_bucket.uploads bucket-name
 
-# Database
-terraform import wayscloud_database.app postgresql/standard/db-name
+# Redis Instance
+terraform import wayscloud_redis_instance.cache INSTANCE_UUID
 
-# VPS
-terraform import wayscloud_vps.web VPS_UUID
+# Database (format: type/tier/name)
+terraform import wayscloud_database.app postgresql/standard/db-name
 
 # App
 terraform import wayscloud_app.api app_ULID
@@ -166,32 +186,6 @@ These attributes are only available on initial creation:
 - `wayscloud_s3_bucket.secret_key`
 - `wayscloud_iot_device.mqtt_username`, `wayscloud_iot_device.mqtt_password`
 
-### Mixed Auth Types
-
-A single provider instance uses one auth type. To use both API key and PAT resources, use provider aliases:
-
-```hcl
-provider "wayscloud" {
-  api_key = var.api_key  # API key for DNS, IoT, SMS, etc.
-}
-
-provider "wayscloud" {
-  alias   = "pat"
-  api_key = var.pat_token  # PAT for database, domain verification
-}
-
-resource "wayscloud_iot_device" "sensor" {
-  device_id = "sensor-01"
-  name      = "Sensor"
-}
-
-resource "wayscloud_domain_verification" "email" {
-  provider = wayscloud.pat
-  domain   = "example.com"
-  purpose  = "email"
-}
-```
-
 ## Rate Limits & Retries
 
 The provider automatically:
@@ -203,15 +197,18 @@ The provider automatically:
 
 ```bash
 # Build
-go build -o terraform-provider-wayscloud
+make build
 
 # Test
-go test ./... -race
+make test
 
 # Acceptance tests
 export WAYSCLOUD_API_KEY="wayscloud_api_xxx..."
-export TF_ACC=1
-go test ./... -v -timeout 60m
+export WAYSCLOUD_PAT_TOKEN="wayscloud_pat_xxx..."
+make testacc
+
+# Install locally
+make install
 ```
 
 ## Versioning
@@ -233,6 +230,6 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
 ## Support
 
-- [Terraform Registry Docs](https://registry.terraform.io/providers/wayscloudas/wayscloud/latest/docs)
+- [Terraform Registry Docs](https://registry.terraform.io/providers/wayscloud/wayscloud/latest/docs)
 - [GitHub Issues](https://github.com/wayscloudas/terraform-provider-wayscloud/issues)
 - [WAYSCloud Support](https://wayscloud.services/support)

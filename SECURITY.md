@@ -4,7 +4,9 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+| 0.4.x   | :white_check_mark: |
+| 0.3.x   | :white_check_mark: |
+| < 0.3   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -26,12 +28,13 @@ We will respond within 48 hours and work with you to understand and address the 
 ```hcl
 # BAD - Never do this
 provider "wayscloud" {
-  api_key = "wayscloud_api_abc123..."  # NEVER commit real keys!
+  api_key   = "wayscloud_api_abc123..."  # NEVER commit real keys!
+  pat_token = "wayscloud_pat_xyz789..."  # NEVER commit real tokens!
 }
 
 # GOOD - Use environment variables
 provider "wayscloud" {}
-# Set WAYSCLOUD_API_KEY environment variable
+# Set WAYSCLOUD_API_KEY and WAYSCLOUD_PAT_TOKEN environment variables
 
 # GOOD - Use Terraform variables
 variable "wayscloud_api_key" {
@@ -39,14 +42,20 @@ variable "wayscloud_api_key" {
   sensitive = true
 }
 
+variable "wayscloud_pat_token" {
+  type      = string
+  sensitive = true
+}
+
 provider "wayscloud" {
-  api_key = var.wayscloud_api_key
+  api_key   = var.wayscloud_api_key
+  pat_token = var.wayscloud_pat_token
 }
 ```
 
 ### CI/CD Security
 
-1. **Use secrets management**: Store API keys in your CI/CD platform's secret store (GitHub Secrets, GitLab CI Variables, etc.)
+1. **Use secrets management**: Store API keys and PAT tokens in your CI/CD platform's secret store (GitHub Secrets, GitLab CI Variables, etc.)
 
 2. **Never log secrets**: The provider is designed to never log API keys or PAT tokens. If you see tokens in logs, report it as a security issue.
 
@@ -100,6 +109,8 @@ The following attributes are marked as `sensitive` in the schema and will not ap
 - `wayscloud_database.connection_string`
 - `wayscloud_redis_instance.password`
 - `wayscloud_s3_bucket.secret_key`
+- `wayscloud_iot_device.mqtt_username`
+- `wayscloud_iot_device.mqtt_password`
 
 ## Changelog
 

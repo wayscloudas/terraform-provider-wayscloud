@@ -100,7 +100,7 @@ func (d *VPSOSTemplatesDataSource) Configure(ctx context.Context, req datasource
 func (d *VPSOSTemplatesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	tflog.Debug(ctx, "Reading VPS OS templates data source")
 
-	respBody, err := d.client.Get(ctx, "/v1/vps/os-templates")
+	respBody, err := d.client.Get(ctx, "/v1/vps/os-templates/")
 	if err != nil {
 		resp.Diagnostics.Append(dataSourceDiagnostic("wayscloud_vps_os_templates", err)...)
 		return

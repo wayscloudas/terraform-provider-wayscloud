@@ -4,7 +4,7 @@ resource "wayscloud_vps" "web" {
   display_name = "Production Web Server"
   plan_code    = "NO-Start-Linux-2cpu-4096mb-30gb"
   region       = "NO"
-  os_template  = "ubuntu-22.04"
+  os_template  = "ubuntu-24.04"
 
   ssh_keys = [
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAB... user@workstation"
@@ -24,13 +24,13 @@ resource "wayscloud_vps" "db" {
   ]
 }
 
-# Windows Server for specific workloads
+# Windows Server (requires Windows-specific plan, no SSH keys)
 resource "wayscloud_vps" "windows" {
   hostname     = "win01.example.com"
   display_name = "Windows Application Server"
-  plan_code    = "NO-Premium-Windows-4cpu-8192mb-100gb"
+  plan_code    = "NO-Medium-Windows-4cpu-4096mb-64gb"
   region       = "NO"
-  os_template  = "windows-server-2022"
+  os_template  = "windows-server-2025"
 }
 
 # Output connection info

@@ -30,7 +30,7 @@ type Client struct {
 	UserAgent  string
 }
 
-// NewClient creates a new WAYSCloud API client
+// NewClient creates a new WAYSCloud API client (legacy single-token mode)
 func NewClient(apiKey string, baseURL string) *Client {
 	if baseURL == "" {
 		baseURL = DefaultBaseURL
@@ -51,6 +51,44 @@ func NewClient(apiKey string, baseURL string) *Client {
 		c.PATToken = apiKey
 	} else {
 		c.APIKey = apiKey
+	}
+
+	return c
+}
+
+// NewClientDualAuth creates a client that supports both API key and PAT authentication.
+// API key is used via X-API-Key header for most resources.
+// PAT is used via Authorization: Bearer for database and domain verification resources.
+// If only one token is provided, it auto-detects the type (backward compatible).
+func NewClientDualAuth(apiKey string, patToken string, baseURL string) *Client {
+	if baseURL == "" {
+		baseURL = DefaultBaseURL
+	}
+
+	c := &Client{
+		BaseURL: baseURL,
+		HTTPClient: &http.Client{
+			Timeout: DefaultTimeout,
+		},
+		UserAgent: "terraform-provider-wayscloud",
+	}
+
+	// If explicit PAT token provided, use it
+	if patToken != "" {
+		c.PATToken = patToken
+	}
+
+	// If explicit API key provided, use it
+	if apiKey != "" {
+		// If apiKey is actually a PAT and no separate PAT was provided, use it as PAT too
+		if strings.HasPrefix(apiKey, "wayscloud_pat_") {
+			if c.PATToken == "" {
+				c.PATToken = apiKey
+			}
+			// Don't set as APIKey since PAT uses Bearer auth
+		} else {
+			c.APIKey = apiKey
+		}
 	}
 
 	return c
@@ -153,11 +191,12 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 			return nil, fmt.Errorf("failed to create request: %w", err)
 		}
 
-		// Use appropriate auth header
+		// Set auth headers - both can be present for dual-auth support
+		if c.APIKey != "" {
+			req.Header.Set("X-API-Key", c.APIKey)
+		}
 		if c.PATToken != "" {
 			req.Header.Set("Authorization", "Bearer "+c.PATToken)
-		} else if c.APIKey != "" {
-			req.Header.Set("X-API-Key", c.APIKey)
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")

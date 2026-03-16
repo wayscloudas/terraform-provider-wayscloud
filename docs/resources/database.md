@@ -7,7 +7,7 @@ description: |-
   WAYSCloud DBaaS provides fully managed database instances with automatic backups,
   monitoring, and optional encryption at rest.
   ~> Note: This resource requires a Personal Access Token (PAT) with database:read and database:write scopes.
-  Configure via pat_token in the provider block or set the WAYSCLOUD_PAT_TOKEN environment variable.
+  Use wayscloud_pat_xxx... instead of wayscloud_api_xxx....
   Example Usage
   PostgreSQL Database
   
@@ -56,7 +56,7 @@ WAYSCloud DBaaS provides fully managed database instances with automatic backups
 monitoring, and optional encryption at rest.
 
 ~> **Note:** This resource requires a Personal Access Token (PAT) with `database:read` and `database:write` scopes.
-Configure via `pat_token` in the provider block or set the `WAYSCLOUD_PAT_TOKEN` environment variable.
+Use `wayscloud_pat_xxx...` instead of `wayscloud_api_xxx...`.
 
 ## Example Usage
 

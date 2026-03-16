@@ -136,7 +136,7 @@ terraform import wayscloud_app.api app_01ARZ3NDEKTSV4RRFFQ69G5FAV
 - `health_check_path` (String) Health check endpoint. Default: `/health`.
 - `idle_timeout_minutes` (Number) Minutes of inactivity before scaling to zero (1-60). Default: `15`.
 - `max_instances` (Number) Maximum instances (1-10). Default: `1`.
-- `min_instances` (Number) Minimum instances. Set to 0 for scale-to-zero. Default: `1`.
+- `min_instances` (Number) Minimum instances. Set to 0 for scale-to-zero. Default: `0`.
 - `plan` (String) Plan ID. Default: `app-basic`. Available: `app-basic`, `app-standard`, `app-professional`.
 - `port` (Number) Port the app listens on. Default: `8080`.
 - `region` (String) Region code. Default: `no` (Norway).

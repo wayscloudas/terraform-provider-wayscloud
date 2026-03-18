@@ -110,11 +110,11 @@ SSH keys are injected via cloud-init during initial boot.
 - `hostname` (String) VPS hostname (FQDN). Example: `web01.example.com`.
 - `os_template` (String) OS template. Example: `ubuntu-24.04`, `debian-12`, `windows-server-2025`.
 - `plan_code` (String) VPS plan code. Use the `wayscloud_vps_plans` data source to list available plans.
-- `region` (String) Datacenter region. Example: `NO` (Norway).
+- `region` (String) Datacenter region. Example: `NO` (Norway). Also accepts `oslo`, `norway`, etc.
 
 ### Optional
 
-- `display_name` (String) User-friendly display name for the VPS.
+- `display_name` (String) User-friendly display name for the VPS. If not set, defaults to hostname.
 - `ssh_keys` (List of String) List of SSH public keys for access (Linux only).
 
 ### Read-Only

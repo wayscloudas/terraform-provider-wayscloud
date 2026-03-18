@@ -24,6 +24,75 @@ import (
 	"github.com/wayscloudas/terraform-provider-wayscloud/internal/client"
 )
 
+// Region normalization map: user-friendly names → API region codes
+var regionNormalizeMap = map[string]string{
+	"oslo":    "NO",
+	"norway":  "NO",
+	"no":      "NO",
+	"sweden":  "SE",
+	"se":      "SE",
+	"france":  "FR",
+	"fr":      "FR",
+	"germany": "DE",
+	"de":      "DE",
+	"eu":      "EU",
+	"us":      "US",
+}
+
+// normalizeRegion converts user-friendly region names to API region codes.
+func normalizeRegion(region string) string {
+	lower := strings.ToLower(strings.TrimSpace(region))
+	if code, ok := regionNormalizeMap[lower]; ok {
+		return code
+	}
+	return region
+}
+
+// displayNameComputedModifier marks display_name as unknown (will be computed)
+// when the user hasn't set it and there's no prior state. This prevents
+// "inconsistent result after apply" when the server defaults display_name to hostname.
+type displayNameComputedModifier struct{}
+
+func (m displayNameComputedModifier) Description(_ context.Context) string {
+	return "If display_name is not set, it will be computed by the server (defaults to hostname)."
+}
+
+func (m displayNameComputedModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m displayNameComputedModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	// On create: config is null, no prior state → mark unknown (server will compute)
+	if req.ConfigValue.IsNull() && req.StateValue.IsNull() {
+		resp.PlanValue = types.StringUnknown()
+		return
+	}
+	// On update/read: config is null, state has value → preserve state
+	if req.ConfigValue.IsNull() && !req.StateValue.IsNull() {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+// regionNormalizeModifier normalizes region values during planning so that
+// user-friendly names like "oslo" match the API's canonical codes like "NO".
+type regionNormalizeModifier struct{}
+
+func (m regionNormalizeModifier) Description(_ context.Context) string {
+	return "Normalizes region to the canonical API code (e.g. oslo → NO)."
+}
+
+func (m regionNormalizeModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m regionNormalizeModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	normalized := normalizeRegion(req.ConfigValue.ValueString())
+	resp.PlanValue = types.StringValue(normalized)
+}
+
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &VPSResource{}
 var _ resource.ResourceWithImportState = &VPSResource{}
@@ -179,7 +248,11 @@ SSH keys are injected via cloud-init during initial boot.
 			},
 			"display_name": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "User-friendly display name for the VPS.",
+				Computed:            true,
+				MarkdownDescription: "User-friendly display name for the VPS. If not set, defaults to hostname.",
+				PlanModifiers: []planmodifier.String{
+					displayNameComputedModifier{},
+				},
 			},
 			"plan_code": schema.StringAttribute{
 				Required:            true,
@@ -190,8 +263,9 @@ SSH keys are injected via cloud-init during initial boot.
 			},
 			"region": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "Datacenter region. Example: `NO` (Norway).",
+				MarkdownDescription: "Datacenter region. Example: `NO` (Norway). Also accepts `oslo`, `norway`, etc.",
 				PlanModifiers: []planmodifier.String{
+					regionNormalizeModifier{},
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
@@ -306,14 +380,17 @@ func (r *VPSResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
+	// Remember if user explicitly set display_name
+	userSetDisplayName := !data.DisplayName.IsNull() && !data.DisplayName.IsUnknown()
+
 	createReq := vpsCreateRequest{
 		Hostname:   data.Hostname.ValueString(),
 		PlanCode:   data.PlanCode.ValueString(),
-		Region:     data.Region.ValueString(),
+		Region:     normalizeRegion(data.Region.ValueString()),
 		OSTemplate: data.OSTemplate.ValueString(),
 	}
 
-	if !data.DisplayName.IsNull() {
+	if userSetDisplayName {
 		createReq.DisplayName = data.DisplayName.ValueString()
 	}
 
@@ -328,9 +405,9 @@ func (r *VPSResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	tflog.Debug(ctx, "Creating VPS", map[string]interface{}{
-		"hostname":   createReq.Hostname,
-		"plan_code":  createReq.PlanCode,
-		"region":     createReq.Region,
+		"hostname":    createReq.Hostname,
+		"plan_code":   createReq.PlanCode,
+		"region":      createReq.Region,
 		"os_template": createReq.OSTemplate,
 	})
 
@@ -477,7 +554,7 @@ func (r *VPSResource) mapResponseToState(data *VPSResourceModel, vps *vpsRespons
 	data.ProviderVMID = types.StringValue(vps.ProviderVMID)
 	data.Hostname = types.StringValue(vps.Hostname)
 	data.PlanCode = types.StringValue(vps.PlanCode)
-	data.Region = types.StringValue(vps.Region)
+	data.Region = types.StringValue(normalizeRegion(vps.Region))
 	data.Status = types.StringValue(vps.Status)
 	data.PowerState = types.StringValue(vps.PowerState)
 	data.CreatedAt = types.StringValue(vps.CreatedAt)

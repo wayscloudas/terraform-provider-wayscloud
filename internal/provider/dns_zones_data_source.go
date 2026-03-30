@@ -94,8 +94,10 @@ func (d *DNSZonesDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	var zones []dnsZoneListResponse
-	if err := json.Unmarshal(respBody, &zones); err != nil {
+	var wrapper struct {
+		Zones []dnsZoneListResponse `json:"zones"`
+	}
+	if err := json.Unmarshal(respBody, &wrapper); err != nil {
 		resp.Diagnostics.AddError("Parse Error", fmt.Sprintf("Unable to parse DNS zones response: %s", err))
 		return
 	}
@@ -103,7 +105,7 @@ func (d *DNSZonesDataSource) Read(ctx context.Context, req datasource.ReadReques
 	// No empty warning for dns_zones — an account may legitimately have no zones
 
 	var data DNSZonesDataSourceModel
-	for _, z := range zones {
+	for _, z := range wrapper.Zones {
 		data.Zones = append(data.Zones, DNSZoneDataModel{
 			Name:   types.StringValue(z.Name),
 			Status: types.StringValue(z.Status),

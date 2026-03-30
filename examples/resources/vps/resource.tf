@@ -1,4 +1,4 @@
-# Ubuntu web server
+# Ubuntu web server with tags and labels
 resource "wayscloud_vps" "web" {
   hostname     = "web01.example.com"
   display_name = "Production Web Server"
@@ -9,9 +9,17 @@ resource "wayscloud_vps" "web" {
   ssh_keys = [
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAB... user@workstation"
   ]
+
+  tags = ["web", "prod"]
+
+  labels = {
+    env  = "prod"
+    role = "frontend"
+    team = "platform"
+  }
 }
 
-# Debian database server
+# Debian database server with tags and labels
 resource "wayscloud_vps" "db" {
   hostname     = "db01.example.com"
   display_name = "Database Server"
@@ -22,6 +30,13 @@ resource "wayscloud_vps" "db" {
   ssh_keys = [
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAB... admin@company"
   ]
+
+  tags = ["database", "prod"]
+
+  labels = {
+    env  = "prod"
+    role = "database"
+  }
 }
 
 # Windows Server (requires Windows-specific plan, no SSH keys)

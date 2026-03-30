@@ -174,14 +174,15 @@ func (p *WAYSCloudProvider) Resources(ctx context.Context) []func() resource.Res
 	return []func() resource.Resource{
 		NewDNSZoneResource,
 		NewDNSRecordResource,
+		NewVPSResource,
+		NewDatabaseResource,
 		NewRedisInstanceResource,
 		NewS3BucketResource,
-		NewDatabaseResource,
-		NewVPSResource,
+		NewS3BucketKeyResource,
 		NewAppResource,
 		NewIoTDeviceResource,
-		NewSMSSenderProfileResource,
-		NewSMSKeywordResource,
+		NewIoTDeviceGroupResource,
+		NewIoTRuleResource,
 		NewDomainVerificationResource,
 	}
 }
@@ -193,6 +194,9 @@ func (p *WAYSCloudProvider) DataSources(ctx context.Context) []func() datasource
 		NewVPSPlansDataSource,
 		NewVPSOSTemplatesDataSource,
 		NewAppPlansDataSource,
+		NewDatabaseTypesDataSource,
+		NewRedisPlansDataSource,
+		NewStorageTiersDataSource,
 	}
 }
 

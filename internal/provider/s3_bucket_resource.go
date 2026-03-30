@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 	"fmt"
 
@@ -309,7 +310,7 @@ func (r *S3BucketResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	// Map response to state
 	data.BucketName = types.StringValue(bucket.BucketName)
-	data.Tier = types.StringValue(bucket.StorageTier)
+	data.Tier = types.StringValue(strings.ToLower(bucket.StorageTier))
 	data.Region = types.StringValue(bucket.Region)
 	data.IsActive = types.BoolValue(bucket.IsActive)
 	// Preserve endpoint from state (not returned by API on read)

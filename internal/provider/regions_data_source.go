@@ -100,7 +100,7 @@ func (d *RegionsDataSource) Configure(ctx context.Context, req datasource.Config
 func (d *RegionsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	tflog.Debug(ctx, "Reading regions data source")
 
-	respBody, err := d.client.Get(ctx, "/v1/regions")
+	respBody, err := d.client.Get(ctx, "/api/v1/regions")
 	if err != nil {
 		resp.Diagnostics.Append(dataSourceDiagnostic("wayscloud_regions", err)...)
 		return

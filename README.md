@@ -22,11 +22,12 @@ WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open sta
 | **Cache** | `wayscloud_redis_instance` | Managed Redis |
 | **Apps** | `wayscloud_app` | Container platform with scale-to-zero |
 | **IoT** | `wayscloud_iot_device` | IoT device management with MQTT |
-| **SMS** | `wayscloud_sms_sender_profile` | SMS sender profiles |
-| **SMS** | `wayscloud_sms_keyword` | SMS inbound keyword handling |
+| **IoT** | `wayscloud_iot_device_group` | IoT device grouping |
+| **IoT** | `wayscloud_iot_rule` | IoT rule management |
+| **Storage** | `wayscloud_s3_bucket_key` | S3 access keys |
 | **Domains** | `wayscloud_domain_verification` | Domain ownership verification |
 
-**Data sources:** `wayscloud_regions`, `wayscloud_dns_zones`, `wayscloud_vps_plans`, `wayscloud_vps_os_templates`, `wayscloud_app_plans`
+**Data sources:** `wayscloud_regions`, `wayscloud_dns_zones`, `wayscloud_vps_plans`, `wayscloud_vps_os_templates`, `wayscloud_app_plans`, `wayscloud_database_types`, `wayscloud_redis_plans`, `wayscloud_storage_tiers`
 
 ## Requirements
 
@@ -85,8 +86,6 @@ provider "wayscloud" {
 | `wayscloud_redis_instance` | API Key | `redis` |
 | `wayscloud_app` | API Key | `apps` |
 | `wayscloud_iot_device` | API Key | `iot` |
-| `wayscloud_sms_sender_profile` | API Key | `sms` |
-| `wayscloud_sms_keyword` | API Key | `sms` |
 | `wayscloud_database` | **PAT** | `database:read`, `database:write` |
 | `wayscloud_domain_verification` | **PAT** | `domain-verification` |
 
@@ -155,12 +154,6 @@ terraform import wayscloud_app.api app_ULID
 
 # IoT Device
 terraform import wayscloud_iot_device.sensor temp-sensor-01
-
-# SMS Sender Profile
-terraform import wayscloud_sms_sender_profile.alerts PROFILE_UUID
-
-# SMS Keyword
-terraform import wayscloud_sms_keyword.help KEYWORD_UUID
 
 # Domain Verification
 terraform import wayscloud_domain_verification.email VERIFICATION_UUID

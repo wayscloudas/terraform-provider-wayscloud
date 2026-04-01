@@ -127,7 +127,7 @@ SSH keys are injected via cloud-init during initial boot.
 - `ipv6_address` (String) Primary IPv6 address (if available).
 - `monthly_price` (Number) Monthly price in the customer's preferred currency.
 - `power_state` (String) Power state: `on`, `off`.
-- `provider_vm_id` (String) Provider-specific VM ID (internal use).
+- `external_id` (String) External VM identifier.
 - `provisioned_at` (String) Timestamp when the VPS finished provisioning (ISO 8601).
 - `ram_mb` (Number) RAM in megabytes.
 - `status` (String) VPS status: `provisioning`, `active`, `stopped`, `terminated`, `error`.

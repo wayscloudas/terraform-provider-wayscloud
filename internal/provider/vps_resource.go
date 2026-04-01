@@ -110,7 +110,7 @@ type VPSResource struct {
 // VPSResourceModel describes the resource data model.
 type VPSResourceModel struct {
 	ID              types.String  `tfsdk:"id"`
-	ProviderVMID    types.String  `tfsdk:"provider_vm_id"`
+	ExternalID      types.String  `tfsdk:"external_id"`
 	Hostname        types.String  `tfsdk:"hostname"`
 	DisplayName     types.String  `tfsdk:"display_name"`
 	PlanCode        types.String  `tfsdk:"plan_code"`
@@ -142,7 +142,7 @@ type vpsCreateRequest struct {
 
 type vpsResponse struct {
 	ID              string   `json:"id"`
-	ProviderVMID    string   `json:"provider_vm_id"`
+	ExternalID      string   `json:"provider_vm_id"`
 	Hostname        string   `json:"hostname"`
 	DisplayName     *string  `json:"display_name,omitempty"`
 	PlanCode        string   `json:"plan_code"`
@@ -232,9 +232,9 @@ SSH keys are injected via cloud-init during initial boot.
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"provider_vm_id": schema.StringAttribute{
+			"external_id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Provider-specific VM ID (internal use).",
+				MarkdownDescription: "External VM identifier.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -551,7 +551,7 @@ func (r *VPSResource) ImportState(ctx context.Context, req resource.ImportStateR
 // mapResponseToState maps the API response to the Terraform state model
 func (r *VPSResource) mapResponseToState(data *VPSResourceModel, vps *vpsResponse) {
 	data.ID = types.StringValue(vps.ID)
-	data.ProviderVMID = types.StringValue(vps.ProviderVMID)
+	data.ExternalID = types.StringValue(vps.ExternalID)
 	data.Hostname = types.StringValue(vps.Hostname)
 	data.PlanCode = types.StringValue(vps.PlanCode)
 	data.Region = types.StringValue(normalizeRegion(vps.Region))

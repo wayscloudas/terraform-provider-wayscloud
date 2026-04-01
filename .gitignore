@@ -28,7 +28,11 @@ Thumbs.db
 debug.log
 terraform-provider-wayscloud
 
-# Internal reports (never publish)
+# Internal reports and test configs (never publish)
 AUDIT_REPORT.md
 VERIFICATION_REPORT.md
 docs/verification/
+maintainers/
+test-hardening/
+test-e2e/
+test-smoke/

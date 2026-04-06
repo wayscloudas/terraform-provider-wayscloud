@@ -26,7 +26,7 @@ description: |-
   terraform {
     required_providers {
       wayscloud = {
-        source  = "wayscloud/wayscloud"
+        source  = "wayscloudas/wayscloud"
         version = "~> 0.4"
       }
     }
@@ -87,7 +87,7 @@ provider "wayscloud" {
 terraform {
   required_providers {
     wayscloud = {
-      source  = "wayscloud/wayscloud"
+      source  = "wayscloudas/wayscloud"
       version = "~> 0.4"
     }
   }
@@ -120,7 +120,7 @@ resource "wayscloud_dns_record" "www" {
 terraform {
   required_providers {
     wayscloud = {
-      source  = "wayscloud/wayscloud"
+      source  = "wayscloudas/wayscloud"
       version = "~> 0.4"
     }
   }

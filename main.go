@@ -35,7 +35,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/wayscloud/wayscloud",
+		Address: "registry.terraform.io/wayscloudas/wayscloud",
 		Debug:   debug,
 	}
 

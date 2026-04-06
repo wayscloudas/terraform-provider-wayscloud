@@ -6,7 +6,7 @@ GOBIN=$(shell go env GOPATH)/bin
 endif
 
 OS_ARCH=$(shell go env GOOS)_$(shell go env GOARCH)
-INSTALL_DIR=~/.terraform.d/plugins/registry.terraform.io/wayscloud/wayscloud/$(VERSION)/$(OS_ARCH)
+INSTALL_DIR=~/.terraform.d/plugins/registry.terraform.io/wayscloudas/wayscloud/$(VERSION)/$(OS_ARCH)
 
 .PHONY: build test testacc install clean fmt vet lint
 

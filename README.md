@@ -41,7 +41,7 @@ WAYSCloud is a Nordic cloud provider focused on **data sovereignty**, **open sta
 terraform {
   required_providers {
     wayscloud = {
-      source  = "wayscloud/wayscloud"
+      source  = "wayscloudas/wayscloud"
       version = "~> 0.4"
     }
   }
@@ -223,6 +223,7 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
 ## Support
 
-- [Terraform Registry Docs](https://registry.terraform.io/providers/wayscloud/wayscloud/latest/docs)
+- [Documentation](https://docs.wayscloud.services/integrations/terraform)
+- [Terraform Registry](https://registry.terraform.io/providers/wayscloudas/wayscloud/latest/docs)
 - [GitHub Issues](https://github.com/wayscloudas/terraform-provider-wayscloud/issues)
-- [WAYSCloud Support](https://wayscloud.services/support)
+- [WAYSCloud Support](https://my.wayscloud.services/support)

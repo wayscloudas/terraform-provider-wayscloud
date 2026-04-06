@@ -100,7 +100,7 @@ func (d *DatabaseTypesDataSource) Configure(ctx context.Context, req datasource.
 func (d *DatabaseTypesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	tflog.Debug(ctx, "Reading database types data source")
 
-	respBody, err := d.client.Get(ctx, "/api/v1/dashboard/databases/tiers")
+	respBody, err := d.client.Get(ctx, "/v1/databases/tiers")
 	if err != nil {
 		resp.Diagnostics.Append(dataSourceDiagnostic("wayscloud_database_types", err)...)
 		return

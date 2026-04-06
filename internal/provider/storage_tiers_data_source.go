@@ -31,19 +31,19 @@ type StorageTiersDataSourceModel struct {
 }
 
 type StorageTierModel struct {
-	ID           types.String  `tfsdk:"id"`
-	Name         types.String  `tfsdk:"name"`
-	Description  types.String  `tfsdk:"description"`
-	MonthlyPrice types.Float64 `tfsdk:"monthly_price"`
-	Currency     types.String  `tfsdk:"currency"`
+	ID          types.String  `tfsdk:"id"`
+	Name        types.String  `tfsdk:"name"`
+	Description types.String  `tfsdk:"description"`
+	PricePerGB  types.Float64 `tfsdk:"price_per_gb"`
+	Currency    types.String  `tfsdk:"currency"`
 }
 
 type storageTierResponse struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	Description  string  `json:"description"`
-	MonthlyPrice float64 `json:"monthly_price"`
-	Currency     string  `json:"currency"`
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Description string `json:"description"`
+	PricePerGB float64 `json:"price_per_gb"`
+	Currency   string  `json:"currency"`
 }
 
 func (d *StorageTiersDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -71,9 +71,9 @@ func (d *StorageTiersDataSource) Schema(ctx context.Context, req datasource.Sche
 							Computed:            true,
 							MarkdownDescription: "Human-readable description of the storage tier.",
 						},
-						"monthly_price": schema.Float64Attribute{
+						"price_per_gb": schema.Float64Attribute{
 							Computed:            true,
-							MarkdownDescription: "Monthly price for the tier.",
+							MarkdownDescription: "Price per GB/month in customer's currency.",
 						},
 						"currency": schema.StringAttribute{
 							Computed:            true,
@@ -106,7 +106,7 @@ func (d *StorageTiersDataSource) Configure(ctx context.Context, req datasource.C
 func (d *StorageTiersDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	tflog.Debug(ctx, "Reading storage tiers data source")
 
-	respBody, err := d.client.Get(ctx, "/api/v1/dashboard/storage/tiers")
+	respBody, err := d.client.Get(ctx, "/v1/storage/tiers")
 	if err != nil {
 		resp.Diagnostics.Append(dataSourceDiagnostic("wayscloud_storage_tiers", err)...)
 		return
@@ -125,11 +125,11 @@ func (d *StorageTiersDataSource) Read(ctx context.Context, req datasource.ReadRe
 	var data StorageTiersDataSourceModel
 	for _, t := range tiers {
 		data.Tiers = append(data.Tiers, StorageTierModel{
-			ID:           types.StringValue(t.ID),
-			Name:         types.StringValue(t.Name),
-			Description:  types.StringValue(t.Description),
-			MonthlyPrice: types.Float64Value(t.MonthlyPrice),
-			Currency:     types.StringValue(t.Currency),
+			ID:          types.StringValue(t.ID),
+			Name:        types.StringValue(t.Name),
+			Description: types.StringValue(t.Description),
+			PricePerGB:  types.Float64Value(t.PricePerGB),
+			Currency:    types.StringValue(t.Currency),
 		})
 	}
 

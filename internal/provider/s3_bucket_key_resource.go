@@ -111,14 +111,14 @@ terraform import wayscloud_s3_bucket_key.app my-data-bucket/550e8400-e29b-41d4-a
 			},
 			"bucket_name": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The S3 bucket name this key belongs to.",
+				MarkdownDescription: "The S3 bucket name this key belongs to. Changing this forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "Human-readable name for the access key.",
+				MarkdownDescription: "Human-readable name for the access key. Changing this forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

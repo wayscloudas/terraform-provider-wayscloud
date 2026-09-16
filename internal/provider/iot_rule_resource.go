@@ -97,18 +97,20 @@ IoT rules define conditions that trigger alerts based on device telemetry data. 
 
 ## Example Usage
 
+### Threshold Rule
+
 ` + "```hcl" + `
 resource "wayscloud_iot_rule" "temp_alert" {
-  name      = "High Temperature Alert"
-  rule_type = "threshold"
+  name       = "High Temperature Alert"
+  rule_type  = "threshold"
   scope_type = "fleet"
   severity   = "warning"
 
   config = jsonencode({
-    field     = "temperature"
-    operator  = ">"
-    value     = 80
-    duration  = 300
+    field    = "temperature"
+    operator = ">"
+    value    = 80
+    duration = 300
   })
 
   cooldown_seconds = 600
@@ -157,7 +159,7 @@ terraform import wayscloud_iot_rule.temp_alert 550e8400-e29b-41d4-a716-446655440
 			},
 			"rule_type": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "Type of rule: `missing_data`, `offline`, `threshold`, `message_rate`, `reconnect_rate`.",
+				MarkdownDescription: "Type of rule: `missing_data`, `offline`, `threshold`, `message_rate`, `reconnect_rate`. Changing this forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

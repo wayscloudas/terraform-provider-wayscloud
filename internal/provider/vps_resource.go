@@ -24,28 +24,41 @@ import (
 	"github.com/wayscloudas/terraform-provider-wayscloud/internal/client"
 )
 
-// Region normalization map: user-friendly names → API region codes
+// Region normalization map: user-friendly names → API region codes.
+// no-oslo-1, stockholm, frankfurt and paris complete the aliases that the VPS
+// API maps (VPS_REGION_ALIASES in wayscloud-provision-api app/region_codes.py).
 var regionNormalizeMap = map[string]string{
-	"oslo":    "NO",
-	"norway":  "NO",
-	"no":      "NO",
-	"sweden":  "SE",
-	"se":      "SE",
-	"france":  "FR",
-	"fr":      "FR",
-	"germany": "DE",
-	"de":      "DE",
-	"eu":      "EU",
-	"us":      "US",
+	"oslo":      "NO",
+	"norway":    "NO",
+	"no":        "NO",
+	"no-oslo-1": "NO",
+	"sweden":    "SE",
+	"se":        "SE",
+	"stockholm": "SE",
+	"france":    "FR",
+	"fr":        "FR",
+	"paris":     "FR",
+	"germany":   "DE",
+	"de":        "DE",
+	"frankfurt": "DE",
+	"eu":        "EU",
+	"us":        "US",
 }
 
-// normalizeRegion converts user-friendly region names to API region codes.
+// normalizeRegion converts a region as written to the code the API stores.
+// Known names map to their country code; anything else is trimmed and
+// upper-cased, as the API does (`nl` → `NL`).
 func normalizeRegion(region string) string {
-	lower := strings.ToLower(strings.TrimSpace(region))
-	if code, ok := regionNormalizeMap[lower]; ok {
+	trimmed := strings.TrimSpace(region)
+	if code, ok := regionNormalizeMap[strings.ToLower(trimmed)]; ok {
 		return code
 	}
-	return region
+	return strings.ToUpper(trimmed)
+}
+
+// regionsEquivalent reports whether two spellings name the same region.
+func regionsEquivalent(a, b string) bool {
+	return normalizeRegion(a) == normalizeRegion(b)
 }
 
 // displayNameComputedModifier marks display_name as unknown (will be computed)
@@ -73,12 +86,15 @@ func (m displayNameComputedModifier) PlanModifyString(_ context.Context, req pla
 	}
 }
 
-// regionNormalizeModifier normalizes region values during planning so that
-// user-friendly names like "oslo" match the API's canonical codes like "NO".
+// regionNormalizeModifier keeps the region in state when the configuration
+// only spells it differently (NO, no, oslo). Terraform rejects a planned value
+// that matches neither the configuration nor the prior state, so the configured
+// spelling is never rewritten to the API code here: on create the plan keeps
+// it, and mapResponseToState stores it.
 type regionNormalizeModifier struct{}
 
 func (m regionNormalizeModifier) Description(_ context.Context) string {
-	return "Normalizes region to the canonical API code (e.g. oslo → NO)."
+	return "Keeps the region in state when the configuration only changes its spelling (e.g. NO → no)."
 }
 
 func (m regionNormalizeModifier) MarkdownDescription(ctx context.Context) string {
@@ -86,17 +102,19 @@ func (m regionNormalizeModifier) MarkdownDescription(ctx context.Context) string
 }
 
 func (m regionNormalizeModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() || req.StateValue.IsNull() || req.StateValue.IsUnknown() {
 		return
 	}
-	normalized := normalizeRegion(req.ConfigValue.ValueString())
-	resp.PlanValue = types.StringValue(normalized)
+	if regionsEquivalent(req.StateValue.ValueString(), req.ConfigValue.ValueString()) {
+		resp.PlanValue = req.StateValue
+	}
 }
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &VPSResource{}
 var _ resource.ResourceWithImportState = &VPSResource{}
 var _ resource.ResourceWithValidateConfig = &VPSResource{}
+var _ resource.ResourceWithModifyPlan = &VPSResource{}
 
 func NewVPSResource() resource.Resource {
 	return &VPSResource{}
@@ -268,7 +286,7 @@ SSH keys are injected via cloud-init during initial boot.
 			},
 			"region": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "Datacenter region. Example: `NO` (Norway). Also accepts `oslo`, `norway`, etc.",
+				MarkdownDescription: "Datacenter region as an ISO 3166-1 country code in any letter case, e.g. `NO` or `no`. Also accepts `oslo`, `norway`, `no-oslo-1`, `stockholm`, `sweden`, `frankfurt`, `germany`, `paris` and `france`. Changing only its spelling, e.g. from `NO` to `no`, plans no change.",
 				PlanModifiers: []planmodifier.String{
 					regionNormalizeModifier{},
 					stringplanmodifier.RequiresReplace(),
@@ -602,7 +620,11 @@ func (r *VPSResource) mapResponseToState(data *VPSResourceModel, vps *vpsRespons
 	data.ExternalID = types.StringValue(vps.ExternalID)
 	data.Hostname = types.StringValue(vps.Hostname)
 	data.PlanCode = types.StringValue(vps.PlanCode)
-	data.Region = types.StringValue(normalizeRegion(vps.Region))
+	// Keep the region as written while it names the region the API returned,
+	// so apply and refresh do not turn `no` or `oslo` into `NO`.
+	if data.Region.IsNull() || data.Region.IsUnknown() || !regionsEquivalent(data.Region.ValueString(), vps.Region) {
+		data.Region = types.StringValue(normalizeRegion(vps.Region))
+	}
 	data.Status = types.StringValue(vps.Status)
 	data.PowerState = types.StringValue(vps.PowerState)
 	data.CreatedAt = types.StringValue(vps.CreatedAt)
@@ -657,6 +679,33 @@ func (r *VPSResource) mapResponseToState(data *VPSResourceModel, vps *vpsRespons
 		data.ProvisionedAt = types.StringValue(*vps.ProvisionedAt)
 	} else {
 		data.ProvisionedAt = types.StringNull()
+	}
+}
+
+// ModifyPlan plans no change when only the spelling of region differs from
+// state. regionNormalizeModifier has already planned the region from state, but
+// the framework marks computed attributes unknown before plan modifiers run
+// whenever the configuration differs from state. Without this, changing `NO` to
+// `no` would plan an in-place update that leaves those attributes unknown.
+func (r *VPSResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var plan, state VPSResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.Hostname.Equal(state.Hostname) &&
+		plan.DisplayName.Equal(state.DisplayName) &&
+		plan.PlanCode.Equal(state.PlanCode) &&
+		plan.Region.Equal(state.Region) &&
+		plan.OSTemplate.Equal(state.OSTemplate) &&
+		plan.SSHKeys.Equal(state.SSHKeys) {
+		resp.Diagnostics.Append(resp.Plan.Set(ctx, &state)...)
 	}
 }
 

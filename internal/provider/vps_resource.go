@@ -140,6 +140,11 @@ type vpsCreateRequest struct {
 	SSHKeys     []string `json:"ssh_keys,omitempty"`
 }
 
+// vpsUpdateRequest is the body of PATCH /v1/vps/{id}.
+type vpsUpdateRequest struct {
+	DisplayName string `json:"display_name"`
+}
+
 type vpsResponse struct {
 	ID              string   `json:"id"`
 	ExternalID      string   `json:"provider_vm_id"`
@@ -295,10 +300,16 @@ SSH keys are injected via cloud-init during initial boot.
 			"ipv4_address": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Primary IPv4 address.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"ipv6_address": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Primary IPv6 address (if available).",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"vcpu": schema.Int64Attribute{
 				Computed:            true,
@@ -338,10 +349,16 @@ SSH keys are injected via cloud-init during initial boot.
 			"created_at": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Timestamp when the VPS was created (ISO 8601).",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"provisioned_at": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Timestamp when the VPS finished provisioning (ISO 8601).",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -501,15 +518,46 @@ func (r *VPSResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 }
 
 func (r *VPSResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// VPS update is limited - most fields require replacement
-	// Only display_name can be updated in-place (if API supports it)
-	var data VPSResourceModel
+	// display_name is the only argument that changes in place; every other
+	// argument forces a new VPS.
+	var data, state VPSResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// For now, just save the state - actual update would require API support
+	vpsID := state.ID.ValueString()
+
+	var respBody []byte
+	var err error
+	if !data.DisplayName.IsNull() && !data.DisplayName.IsUnknown() && !data.DisplayName.Equal(state.DisplayName) {
+		tflog.Debug(ctx, "Updating VPS display name", map[string]interface{}{
+			"id": vpsID,
+		})
+		respBody, err = r.client.Patch(ctx, fmt.Sprintf("/v1/vps/%s", vpsID), vpsUpdateRequest{
+			DisplayName: data.DisplayName.ValueString(),
+		})
+	} else {
+		// Nothing to send; read the VPS so no computed value is left unknown.
+		respBody, err = r.client.Get(ctx, fmt.Sprintf("/v1/vps/%s", vpsID))
+	}
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update VPS: %s", err))
+		return
+	}
+
+	var vps vpsResponse
+	if err := json.Unmarshal(respBody, &vps); err != nil {
+		resp.Diagnostics.AddError("Parse Error", fmt.Sprintf("Unable to parse API response: %s", err))
+		return
+	}
+
+	// Map response to state, preserving SSH keys from the plan (not returned in response)
+	sshKeys := data.SSHKeys
+	r.mapResponseToState(&data, &vps)
+	data.SSHKeys = sshKeys
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 

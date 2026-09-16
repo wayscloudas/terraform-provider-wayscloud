@@ -110,7 +110,7 @@ SSH keys are injected via cloud-init during initial boot.
 - `hostname` (String) VPS hostname (FQDN). Example: `web01.example.com`.
 - `os_template` (String) OS template. Example: `ubuntu-24.04`, `debian-12`, `windows-server-2025`.
 - `plan_code` (String) VPS plan code. Use the `wayscloud_vps_plans` data source to list available plans.
-- `region` (String) Datacenter region. Example: `NO` (Norway). Also accepts `oslo`, `norway`, etc.
+- `region` (String) Datacenter region as an ISO 3166-1 country code in any letter case, e.g. `NO` or `no`. Also accepts `oslo`, `norway`, `no-oslo-1`, `stockholm`, `sweden`, `frankfurt`, `germany`, `paris` and `france`. Changing only its spelling, e.g. from `NO` to `no`, plans no change.
 
 ### Optional
 
@@ -122,12 +122,12 @@ SSH keys are injected via cloud-init during initial boot.
 - `created_at` (String) Timestamp when the VPS was created (ISO 8601).
 - `currency` (String) Currency code for pricing (e.g., `NOK`, `SEK`, `DKK`, `EUR`).
 - `disk_gb` (Number) Disk size in gigabytes.
+- `external_id` (String) External VM identifier.
 - `id` (String) Unique identifier for the VPS instance (UUID).
 - `ipv4_address` (String) Primary IPv4 address.
 - `ipv6_address` (String) Primary IPv6 address (if available).
 - `monthly_price` (Number) Monthly price in the customer's preferred currency.
 - `power_state` (String) Power state: `on`, `off`.
-- `external_id` (String) External VM identifier.
 - `provisioned_at` (String) Timestamp when the VPS finished provisioning (ISO 8601).
 - `ram_mb` (Number) RAM in megabytes.
 - `status` (String) VPS status: `provisioning`, `active`, `stopped`, `terminated`, `error`.

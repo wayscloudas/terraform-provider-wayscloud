@@ -122,12 +122,12 @@ SSH keys are injected via cloud-init during initial boot.
 - `created_at` (String) Timestamp when the VPS was created (ISO 8601).
 - `currency` (String) Currency code for pricing (e.g., `NOK`, `SEK`, `DKK`, `EUR`).
 - `disk_gb` (Number) Disk size in gigabytes.
+- `external_id` (String) External VM identifier.
 - `id` (String) Unique identifier for the VPS instance (UUID).
 - `ipv4_address` (String) Primary IPv4 address.
 - `ipv6_address` (String) Primary IPv6 address (if available).
 - `monthly_price` (Number) Monthly price in the customer's preferred currency.
 - `power_state` (String) Power state: `on`, `off`.
-- `external_id` (String) External VM identifier.
 - `provisioned_at` (String) Timestamp when the VPS finished provisioning (ISO 8601).
 - `ram_mb` (Number) RAM in megabytes.
 - `status` (String) VPS status: `provisioning`, `active`, `stopped`, `terminated`, `error`.

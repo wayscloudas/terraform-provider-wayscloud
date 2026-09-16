@@ -55,6 +55,12 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: true
+      # resource.UnitTest runs the Terraform CLI. Without one on PATH, terraform-plugin-testing
+      # downloads it and rejects the download ("openpgp: key expired").
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.6.*'
+          terraform_wrapper: false
       - run: go mod download
       - run: go test -v -cover ./...
 

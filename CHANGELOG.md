@@ -2,6 +2,14 @@
 
 All notable changes to the WAYSCloud Terraform Provider are documented here.
 
+## [Unreleased]
+
+### Fixed
+- **Regions data source**: `wayscloud_regions` read `/api/v1/regions`, which `api.wayscloud.services` does not serve publicly (HTTP 403), so every read failed. It now reads the public `GET /v1/regions` and parses its `{"regions": [...]}` body. `country` is the ISO 3166-1 alpha-2 code (e.g. `NO`), and `available` is true when the region's `status` is `active`.
+
+### Added
+- **Regions data source**: `city`, `status` and `available_services` (e.g. `storage`, `apps`, `kubernetes`) on each region. Existing attributes keep their names and types.
+
 ## [0.4.0] - 2026-03-16
 
 ### Added

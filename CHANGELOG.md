@@ -7,8 +7,15 @@ All notable changes to the WAYSCloud Terraform Provider are documented here.
 ### Fixed
 - **Regions data source**: `wayscloud_regions` read `/api/v1/regions`, which `api.wayscloud.services` does not serve publicly (HTTP 403), so every read failed. It now reads the public `GET /v1/regions` and parses its `{"regions": [...]}` body. `country` is the ISO 3166-1 alpha-2 code (e.g. `NO`), and `available` is true when the region's `status` is `active`.
 
+- **VPS region**: `wayscloud_vps.region` only worked when written exactly as the API stores it (`NO`, `NL`). Names such as `no` and `oslo` failed at plan ("Provider produced invalid plan"), and codes such as `dk`, `nl`, `no-oslo-1` or `stockholm` failed after apply ("Provider produced inconsistent result after apply"). The region is now accepted in any letter case, and so are the names the API maps (`oslo`, `norway`, `no-oslo-1`, `stockholm`, `sweden`, `frankfurt`, `germany`, `paris`, `france`). State keeps the region as written, and changing only its spelling plans no change. Configurations with `region = "NO"` plan no change.
+- **VPS display_name**: changing `display_name` on an existing VPS failed at apply ("Provider returned invalid result object after apply") and never reached the API. The name is now updated in place through `PATCH /v1/vps/{id}`.
+- **Data source docs**: `wayscloud_database_types` documented a `type` attribute that does not exist, and `wayscloud_storage_tiers` documented `monthly_price` instead of `price_per_gb`. Both pages now document the provider's attributes, including `name` and `is_encrypted` on database types, and keep their examples.
+
 ### Added
 - **Regions data source**: `city`, `status` and `available_services` (e.g. `storage`, `apps`, `kubernetes`) on each region. Existing attributes keep their names and types.
+
+### Changed
+- **VPS plans**: `created_at`, `provisioned_at`, `ipv4_address` and `ipv6_address` keep their known values when a VPS is updated in place, so a rename plans only the `display_name` change. A replaced VPS still gets new values.
 
 ## [0.4.0] - 2026-03-16
 

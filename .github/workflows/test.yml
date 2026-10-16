@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, wayscloud-linux]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
 
   generate:
     name: Generate
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, wayscloud-linux]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -47,7 +47,7 @@ jobs:
   test:
     name: Unit Tests
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, wayscloud-linux]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
   acceptance:
     name: Acceptance Tests
     needs: [build, test]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, wayscloud-linux]
     timeout-minutes: 30
     if: github.ref == 'refs/heads/main'
     env:
